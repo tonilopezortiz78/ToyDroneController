@@ -160,13 +160,39 @@
       <span style="font-size:10px;color:#888;">Flight Time</span>
     </div>
 
-    <h2 style="cursor:pointer;" onclick="toggleHelp()">How To Fly <span id="help-toggle" style="float:right;color:#4af;">▼</span></h2>
-    <div class="procedure" id="help-box">
-      <span class="key">↑↓</span> Pitch <span class="key">←→</span> Roll<br>
-      <span class="key">W</span> Throttle↑ <span class="key">S</span>↓ <span class="key">A</span> Yaw← <span class="key">D</span>→<br>
-      <span class="key">T</span> Takeoff <span class="key">L</span> Land<br>
-      <span class="key">A</span> Arm <span class="key">D</span> Disarm<br>
-      <span class="key">Backspace</span> Takeoff <span class="key">Space</span> <span style="color:#f44">Stop</span>
+    <h2 style="cursor:pointer;" onclick="toggleHelp()">How To Fly <span id="help-toggle" style="float:right;color:#4af;font-size:10px;">▼</span></h2>
+    <div class="procedure" id="help-box" style="padding:10px 12px;">
+      <div style="display:flex;gap:8px;margin-bottom:6px;">
+        <div style="flex:1;background:#0f0f1a;border-radius:4px;padding:6px;text-align:center;">
+          <div style="font-size:9px;color:#888;text-transform:uppercase;margin-bottom:4px;">Movement</div>
+          <div style="font-size:13px;"><span class="key">↑</span> <span class="key">↓</span> <span class="key">←</span> <span class="key">→</span></div>
+          <div style="font-size:9px;color:#888;margin-top:2px;">Pitch · Roll</div>
+        </div>
+        <div style="flex:1;background:#0f0f1a;border-radius:4px;padding:6px;text-align:center;">
+          <div style="font-size:9px;color:#888;text-transform:uppercase;margin-bottom:4px;">Altitude</div>
+          <div style="font-size:13px;"><span class="key">W</span> <span class="key">S</span></div>
+          <div style="font-size:9px;color:#888;margin-top:2px;">Throttle ↑↓</div>
+        </div>
+        <div style="flex:1;background:#0f0f1a;border-radius:4px;padding:6px;text-align:center;">
+          <div style="font-size:9px;color:#888;text-transform:uppercase;margin-bottom:4px;">Rotation</div>
+          <div style="font-size:13px;"><span class="key">A</span> <span class="key">D</span></div>
+          <div style="font-size:9px;color:#888;margin-top:2px;">Yaw ←→</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <div style="flex:1;background:#0f0f1a;border-radius:4px;padding:6px;text-align:center;">
+          <div style="font-size:9px;color:#888;text-transform:uppercase;margin-bottom:4px;">Takeoff</div>
+          <div style="font-size:13px;"><span class="key">T</span> <span class="key">Backspace</span> <span class="key">A</span></div>
+        </div>
+        <div style="flex:1;background:#0f0f1a;border-radius:4px;padding:6px;text-align:center;">
+          <div style="font-size:9px;color:#888;text-transform:uppercase;margin-bottom:4px;">Land</div>
+          <div style="font-size:13px;"><span class="key">L</span></div>
+        </div>
+        <div style="flex:1;background:#2a0a0a;border-radius:4px;padding:6px;text-align:center;">
+          <div style="font-size:9px;color:#f44;text-transform:uppercase;margin-bottom:4px;">Emergency</div>
+          <div style="font-size:13px;"><span class="key" style="background:#622;">Space</span> <span class="key" style="background:#622;">D</span></div>
+        </div>
+      </div>
     </div>
   </div>
 </div>
