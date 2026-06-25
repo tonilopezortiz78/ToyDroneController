@@ -213,6 +213,20 @@ pollTelemetry = async function() {
     document.getElementById('bc-sig').textContent=d.wifi.signal||'--';
     const sv=parseInt(d.wifi.signal);
     document.getElementById('bc-sig').className='badge '+(sv>-60?'on':sv>-70?'info':'warn');
+    // Update signal bar
+    const pct = dbmToPct(d.wifi.signal);
+    document.getElementById('sig-pct').textContent = pct + '%';
+    document.getElementById('sig-fill').style.width = pct + '%';
+    document.getElementById('sig-fill').style.background = pct > 60 ? '#4a4' : pct > 30 ? '#ea0' : '#c44';
+    document.getElementById('sig-dbm').textContent = d.wifi.signal || '--';
+    document.getElementById('sig-ssid').textContent = d.wifi.ssid || '--';
+    // Update angle readout
+    if(d.telemetry) {
+      const p = d.telemetry.pitch !== undefined ? ((128 - d.telemetry.pitch) / 1.28).toFixed(1) : '0';
+      const r = d.telemetry.roll !== undefined ? ((128 - d.telemetry.roll) / 1.28).toFixed(1) : '0';
+      const y = d.telemetry.yaw !== undefined ? ((128 - d.telemetry.yaw) / 1.28).toFixed(1) : '0';
+      document.getElementById('d3d-angles').textContent = `P:${p}° R:${r}° Y:${y}°`;
+    }
     let html = '';
     html += renderTelem('SSID', d.wifi.ssid||'--');
     html += renderTelem('Signal', d.wifi.signal||'--', 'sig');
@@ -227,11 +241,6 @@ pollTelemetry = async function() {
       for(const [k,v] of Object.entries(d.telemetry)) {
         html += renderTelem(k.replace(/_/g,' '), v);
       }
-      // Extract angles for 3D drone
-      if(d.telemetry.pitch !== undefined) dPitch = (128 - d.telemetry.pitch) / 1.28;
-      if(d.telemetry.roll !== undefined) dRoll = (128 - d.telemetry.roll) / 1.28;
-      if(d.telemetry.yaw !== undefined) dYaw = (128 - d.telemetry.yaw) / 1.28;
-      update3DDrone();
     }
     TELEM_EL.innerHTML = html;
   } catch(_) {}
