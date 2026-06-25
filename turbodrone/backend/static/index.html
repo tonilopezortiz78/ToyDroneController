@@ -160,40 +160,7 @@
       <span style="font-size:10px;color:#888;">Flight Time</span>
     </div>
 
-    <h2 style="cursor:pointer;" onclick="toggleHelp()">How To Fly <span id="help-toggle" style="float:right;color:#4af;font-size:10px;">▼</span></h2>
-    <div class="procedure" id="help-box" style="padding:10px 12px;">
-      <div style="display:flex;gap:8px;margin-bottom:6px;">
-        <div style="flex:1;background:#0f0f1a;border-radius:4px;padding:6px;text-align:center;">
-          <div style="font-size:9px;color:#888;text-transform:uppercase;margin-bottom:4px;">Movement</div>
-          <div style="font-size:13px;"><span class="key">↑</span> <span class="key">↓</span> <span class="key">←</span> <span class="key">→</span></div>
-          <div style="font-size:9px;color:#888;margin-top:2px;">Pitch · Roll</div>
-        </div>
-        <div style="flex:1;background:#0f0f1a;border-radius:4px;padding:6px;text-align:center;">
-          <div style="font-size:9px;color:#888;text-transform:uppercase;margin-bottom:4px;">Altitude</div>
-          <div style="font-size:13px;"><span class="key">W</span> <span class="key">S</span></div>
-          <div style="font-size:9px;color:#888;margin-top:2px;">Throttle ↑↓</div>
-        </div>
-        <div style="flex:1;background:#0f0f1a;border-radius:4px;padding:6px;text-align:center;">
-          <div style="font-size:9px;color:#888;text-transform:uppercase;margin-bottom:4px;">Rotation</div>
-          <div style="font-size:13px;"><span class="key">A</span> <span class="key">D</span></div>
-          <div style="font-size:9px;color:#888;margin-top:2px;">Yaw ←→</div>
-        </div>
-      </div>
-      <div style="display:flex;gap:8px;">
-        <div style="flex:1;background:#0f0f1a;border-radius:4px;padding:6px;text-align:center;">
-          <div style="font-size:9px;color:#888;text-transform:uppercase;margin-bottom:4px;">Takeoff</div>
-          <div style="font-size:13px;"><span class="key">T</span> <span class="key">Backspace</span> <span class="key">A</span></div>
-        </div>
-        <div style="flex:1;background:#0f0f1a;border-radius:4px;padding:6px;text-align:center;">
-          <div style="font-size:9px;color:#888;text-transform:uppercase;margin-bottom:4px;">Land</div>
-          <div style="font-size:13px;"><span class="key">L</span></div>
-        </div>
-        <div style="flex:1;background:#2a0a0a;border-radius:4px;padding:6px;text-align:center;">
-          <div style="font-size:9px;color:#f44;text-transform:uppercase;margin-bottom:4px;">Emergency</div>
-          <div style="font-size:13px;"><span class="key" style="background:#622;">Space</span> <span class="key" style="background:#622;">D</span></div>
-        </div>
-      </div>
-    </div>
+
   </div>
 </div>
 
@@ -370,19 +337,6 @@ async function toggleRec() {
       log('Recording stopped');
     }
   } catch(e) { log('Record error'); }
-}
-
-// Toggle help section
-function toggleHelp() {
-  const box = document.getElementById('help-box');
-  const tog = document.getElementById('help-toggle');
-  if (box.style.display === 'none') {
-    box.style.display = 'block';
-    tog.textContent = '▼';
-  } else {
-    box.style.display = 'none';
-    tog.textContent = '▶';
-  }
 }
 
 connectWS();
