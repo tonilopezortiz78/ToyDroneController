@@ -1,0 +1,13 @@
+venv/
+__pycache__/
+*.pyc
+*.jpg
+*.log
+.DS_Store
+.cache/
+dist/
+node_modules/
+turbodrone/backend/venv/
+turbodrone/frontend/node_modules/
+turbodrone/.git/
+captures/
