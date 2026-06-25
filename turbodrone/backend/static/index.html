@@ -145,35 +145,23 @@
       </div>
     </div>
 
-    <h2>How To Fly</h2>
-    <div class="procedure">
-      <b>1. Takeoff</b><br>
-      Press <span class="key">T</span> or click <b style="color:#2a7">Takeoff</b>.<br>
-      Drone rises to ~1.5m and hovers.<br><br>
-
-      <b>2. Fly</b><br>
-      <span class="key">↑</span><span class="key">↓</span> → Pitch (forward/back)<br>
-      <span class="key">←</span><span class="key">→</span> → Roll (left/right)<br>
-      <span class="key">W</span><span class="key">S</span> → Throttle (up/down)<br>
-      <span class="key">A</span><span class="key">D</span> → Yaw (rotate)<br>
-      Hold key = full deflection | Release = center<br><br>
-
-      <b>3. Land</b><br>
-      Press <b style="color:#e62">Land</b> button → gradual descent.<br><br>
-
-      <b class="danger">⚠ EMERGENCY</b><br>
-      Press <span class="key" style="background:#622;color:#f44">Space</span> or <b style="color:#c22">Stop</b> button.<br>
-      <span class="danger">Motors cut immediately — drone falls.</span>
-    </div>
-
-    <div class="row" style="justify-content:space-between;">
-      <span style="font-size:8px;color:#888;"><span id="flight-time">0:00</span></span>
-      <span style="font-size:8px;color:#888;">Flight Time</span>
-    </div>
-    <h2>Log</h2>
-    <div class="log" id="log">Ready<br></div>
     <h2>Telemetry</h2>
     <div class="telem-grid" id="telem"></div>
+
+    <h2>Log</h2>
+    <div class="log" id="log">Ready<br></div>
+    <div class="row" style="justify-content:space-between;">
+      <span style="font-size:10px;color:#888;"><span id="flight-time">0:00</span></span>
+      <span style="font-size:10px;color:#888;">Flight Time</span>
+    </div>
+
+    <h2 style="cursor:pointer;" onclick="toggleHelp()">How To Fly <span id="help-toggle" style="float:right;color:#4af;">▼</span></h2>
+    <div class="procedure" id="help-box">
+      <span class="key">↑↓</span> Pitch <span class="key">←→</span> Roll<br>
+      <span class="key">W</span> Throttle↑ <span class="key">S</span>↓ <span class="key">A</span> Yaw← <span class="key">D</span>→<br>
+      <span class="key">Backspace</span> Takeoff <span class="key">Space</span> <span style="color:#f44">Emergency Stop</span><br>
+      <span class="key">T</span> Takeoff <span class="key">L</span> Land
+    </div>
   </div>
 </div>
 
@@ -328,6 +316,19 @@ pollTelemetry = async function() {
   } catch(_) {}
 };
 setInterval(pollTelemetry,400);
+
+// Toggle help section
+function toggleHelp() {
+  const box = document.getElementById('help-box');
+  const tog = document.getElementById('help-toggle');
+  if (box.style.display === 'none') {
+    box.style.display = 'block';
+    tog.textContent = '▼';
+  } else {
+    box.style.display = 'none';
+    tog.textContent = '▶';
+  }
+}
 
 connectWS();
 log('Dashboard ready');
