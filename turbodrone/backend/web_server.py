@@ -597,6 +597,19 @@ async def dashboard():
         return HTMLResponse(_DASHBOARD_HTML.read_text())
     return HTMLResponse("<h1>RC UFO Drone</h1><p>No dashboard found.</p><ul><li><a href='/mjpeg'>Video</a></li><li><a href='/capabilities'>Capabilities</a></li></ul>")
 
+@app.post("/reconnect")
+async def reconnect_video():
+    """Force video receiver to reconnect the RTSP stream."""
+    if receiver:
+        try:
+            receiver.stop()
+        except:
+            pass
+        time.sleep(0.5)
+        receiver.start()
+        return {"status": "reconnecting"}
+    return {"status": "no receiver"}
+
 @app.get("/status")
 async def get_status():
     """Return current drone telemetry and connection status."""

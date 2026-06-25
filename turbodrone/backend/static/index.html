@@ -148,6 +148,7 @@ document.addEventListener('keydown',e=>{
   if(e.key==='x'){sendCmd('estop');return;}
   if(e.key==='r'){e.preventDefault();toggleRec();return;}
   if(e.key==='c'){fetch('/wifi-connect').then(r=>r.json()).then(d=>log(d.status)).catch(()=>log('WiFi failed'));return;}
+  if(e.key==='i'){fetch('/reconnect',{method:'POST'}).then(r=>r.json()).then(d=>log(d.status)).catch(()=>log('Reconnect failed'));return;}
   if(e.key in KBM){e.preventDefault();kbA[e.key]=true;axes[KBM[e.key][0]]=KBM[e.key][1];sendAxes();}
 });
 document.addEventListener('keyup',e=>{
