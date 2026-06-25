@@ -6,13 +6,16 @@ your own desktop control — keyboard, joystick, or web dashboard.
 
 ## Features
 
-- **Live FPV video** — RTSP MJPEG stream with 90° rotation
-- **Real-time telemetry** — pitch, roll, throttle, yaw, WiFi signal, protocol state
-- **Keyboard control** — WASD + arrows, Space/Backspace for takeoff/stop
-- **Virtual joysticks** — drag-to-fly on the web dashboard
-- **Web dashboard** — combined video, telemetry, and controls
-- **3D drone visualization** — real-time attitude indicator
-- **CLI tools** — standalone viewer, capture, and protocol probe
+- **Live FPV video** — RTSP MJPEG stream with 90° rotation, 3x display
+- **Keyboard control** — Arrows = pitch/roll, W/S = throttle, A/D = yaw, Space = estop, Backspace = takeoff, T = land, L = land
+- **Virtual joysticks** — drag-to-fly on the web dashboard (mouse + touch)
+- **Two 3D drone views** — top and back with real-time pitch/roll/yaw angle readout
+- **Real-time telemetry** — pitch, roll, throttle, yaw, all flags, WiFi signal, protocol variant, resolution ID, raw RX packet
+- **Flight timer** — auto-count since takeoff
+- **Web dashboard** — combined video, telemetry, controls, procedures guide
+- **Procedures guide** — step-by-step fly instructions built into dashboard
+- **CLI tools** — standalone viewer, keyboard control, capture, protocol probe
+- **Auto-restart** — tmux guardian keeps the web server alive
 
 ## Quick Start
 
