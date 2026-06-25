@@ -6,16 +6,17 @@ your own desktop control — keyboard, joystick, or web dashboard.
 
 ## Features
 
-- **Live FPV video** — RTSP MJPEG stream with 90° rotation, 3× display
-- **Keyboard control** — arrows = pitch/roll, W/S = throttle, A/D = yaw, T = takeoff, L = land, A = arm, D = disarm, Backspace = takeoff, Space = emergency stop
-- **Virtual joysticks** — drag-to-fly (mouse + touch), left stick = throttle/yaw, right stick = pitch/roll
-- **Two 3D drone views** — top and back with real-time pitch/roll/yaw angle readout
-- **Real-time telemetry** — pitch, roll, throttle, yaw, flags, WiFi signal, protocol variant, resolution ID, raw RX packet hex
+- **Live FPV video** — RTSP MJPEG 240×320 with 90° rotation, 3× display
+- **Keyboard-only control** — arrows = pitch/roll, W/S = throttle, A/D = yaw
+- **WiFi signal bar** — 0–100% visual indicator with dBm readout
+- **Real-time telemetry** — pitch, roll, throttle, yaw, all flags, WiFi signal, protocol variant, resolution ID, raw RX packet hex
 - **Flight timer** — auto-counter displayed on dashboard
-- **Video recording** — one-click record button saves to `~/Videos/` as MKV (H.264)
-- **Collapsible help** — organized card layout: Movement, Altitude, Rotation, Takeoff, Land, Emergency
-- **CLI tools** — standalone viewer, keyboard-only control, photo/video capture, protocol probe
-- **Web dashboard** — all-in-one: video, joysticks, telemetry, controls, recording, flight timer
+- **Angle display** — live P:0° R:0° Y:0° readout on video overlay
+- **Video recording** — R key saves to `~/Videos/` as MKV (H.264)
+- **3 speed levels** — 1=Slow, 2=Normal, 3=Fast
+- **C key** — connect to drone WiFi from dashboard
+- **Collapsible Keys table** — all keyboard shortcuts in a clean table
+- **CLI tools** — standalone viewer, keyboard control, capture, protocol probe
 
 ## Quick Start
 

@@ -40,23 +40,8 @@
   .procedure .danger { color: #f44; font-weight: 700; }
   .log { background: #0a0a12; border-radius: 3px; padding: 4px 8px; font-family: monospace; font-size: 11px; height: 50px; overflow-y: auto; color: #6a6; }
   .fps { position: absolute; bottom: 10px; left: 10px; font-size: 13px; color: #888; background: rgba(0,0,0,0.7); padding: 3px 10px; border-radius: 4px; }
-  .drone3d-wrap { position: absolute; top: 10px; right: 10px; width: 240px; height: 120px; perspective: 500px; background: rgba(0,0,0,0.6); border-radius: 8px; border: 1px solid rgba(60,140,255,0.2); backdrop-filter: blur(3px); }
-  .drone3d-scene { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; transform-style: preserve-3d; }
-  .drone3d { width: 60px; height: 60px; position: relative; transform-style: preserve-3d; transition: transform 0.1s ease-out; }
-  .drone3d-arm { position: absolute; width: 10px; height: 48px; background: linear-gradient(180deg,#4af,#0a2a5a); border-radius: 4px; box-shadow: 0 0 6px rgba(60,140,255,0.3); }
-  .drone3d-arm.tl { top: -24px; left: 3px; transform-origin: bottom center; transform: rotate(-30deg); }
-  .drone3d-arm.tr { top: -24px; right: 3px; transform-origin: bottom center; transform: rotate(30deg); }
-  .drone3d-arm.bl { bottom: -24px; left: 3px; transform-origin: top center; transform: rotate(30deg); }
-  .drone3d-arm.br { bottom: -24px; right: 3px; transform-origin: top center; transform: rotate(-30deg); }
-  .drone3d-body { width: 28px; height: 28px; background: radial-gradient(circle at 35% 35%, #4af, #0a2a5a); border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); box-shadow: 0 0 16px rgba(60,140,255,0.4), inset 0 0 8px rgba(0,0,0,0.5); border: 1px solid #4af; }
-  .drone3d-prop { position: absolute; width: 16px; height: 5px; background: rgba(60,140,255,0.3); border-radius: 2px; }
-  .drone3d-prop.tl { top: -27px; left: -3px; }
-  .drone3d-prop.tr { top: -27px; right: -3px; }
-  .drone3d-prop.bl { bottom: -27px; left: -3px; }
-  .drone3d-prop.br { bottom: -27px; right: -3px; }
-  .drone3d-ring { position: absolute; width: 66px; height: 66px; border: 1px solid rgba(60,140,255,0.12); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%,-50%); }
-  .drone3d-ring2 { position: absolute; width: 80px; height: 80px; border: 1px dashed rgba(60,140,255,0.06); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%,-50%); }
-  .drone3d-glow { position: absolute; width: 60px; height: 60px; background: radial-gradient(circle, rgba(60,140,255,0.08) 0%, transparent 70%); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%,-50%); }
+  .sig-bar { height: 8px; border-radius: 4px; background: #2a2a3a; overflow: hidden; margin: 2px 0; }
+  .sig-fill { height: 100%; border-radius: 4px; transition: width 0.3s; }
 
 </style>
 </head>
@@ -65,49 +50,18 @@
   <div class="video-panel">
     <img id="video" src="/mjpeg">
     <div class="fps"><span id="fps">0</span> fps</div>
-    <div class="drone3d-wrap" style="width:240px;height:120px;">
-      <div style="height:18px;font-size:10px;color:#4af;text-align:center;border-bottom:1px solid rgba(60,140,255,0.1);">
-        <span id="d3d-angles">P:0° R:0° Y:0°</span>
+    <div style="position:absolute;top:10px;right:10px;background:rgba(0,0,0,0.7);border-radius:6px;padding:6px 10px;width:130px;">
+      <div style="display:flex;justify-content:space-between;font-size:10px;">
+        <span style="color:#888;">WiFi</span>
+        <span id="sig-pct" style="color:#4af;font-weight:bold;">0%</span>
       </div>
-      <div style="display:flex;height:100px;">
-        <div style="flex:1;text-align:center;border-right:1px solid rgba(60,140,255,0.08);">
-          <div style="font-size:8px;color:#888;padding:1px 0;">top</div>
-          <div class="drone3d-scene" style="height:80px;">
-            <div class="drone3d" id="drone3d">
-              <div class="drone3d-glow"></div>
-              <div class="drone3d-ring"></div>
-              <div class="drone3d-ring2"></div>
-              <div class="drone3d-prop tl"></div>
-              <div class="drone3d-prop tr"></div>
-              <div class="drone3d-prop bl"></div>
-              <div class="drone3d-prop br"></div>
-              <div class="drone3d-arm tl"></div>
-              <div class="drone3d-arm tr"></div>
-              <div class="drone3d-arm bl"></div>
-              <div class="drone3d-arm br"></div>
-              <div class="drone3d-body"></div>
-            </div>
-          </div>
-        </div>
-        <div style="flex:1;text-align:center;">
-          <div style="font-size:8px;color:#888;padding:1px 0;">back</div>
-          <div class="drone3d-scene" style="height:80px;">
-            <div class="drone3d" id="drone3d-side">
-              <div class="drone3d-glow"></div>
-              <div class="drone3d-ring"></div>
-              <div class="drone3d-ring2"></div>
-              <div class="drone3d-prop tl"></div>
-              <div class="drone3d-prop tr"></div>
-              <div class="drone3d-prop bl"></div>
-              <div class="drone3d-prop br"></div>
-              <div class="drone3d-arm tl"></div>
-              <div class="drone3d-arm tr"></div>
-              <div class="drone3d-arm bl"></div>
-              <div class="drone3d-arm br"></div>
-              <div class="drone3d-body"></div>
-            </div>
-          </div>
-        </div>
+      <div class="sig-bar"><div class="sig-fill" id="sig-fill" style="width:0%;background:#4a4;"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:8px;color:#666;">
+        <span id="sig-dbm">--dBm</span>
+        <span id="sig-ssid" style="max-width:80px;overflow:hidden;text-overflow:ellipsis;">--</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:#4af;font-family:monospace;margin-top:4px;padding-top:4px;border-top:1px solid rgba(60,140,255,0.1);">
+        <span id="d3d-angles">P:0° R:0° Y:0°</span>
       </div>
     </div>
   </div>
@@ -141,12 +95,15 @@
     <div class="telem-grid" id="telem"></div>
 
     <h2 style="cursor:pointer;" onclick="toggleHelp()">Keys <span id="help-toggle" style="float:right;color:#4af;font-size:10px;">▼</span></h2>
-    <div class="procedure" id="help-box" style="padding:8px 10px;font-size:11px;line-height:1.8;">
-      <b>C</b> Connect WiFi · <b>T</b> Takeoff · <b>L</b> Land<br>
-      <b>↑↓←→</b> Move · <b>W</b>↑<b>S</b>↓ Throttle · <b>A</b><b>D</b> Yaw<br>
-      <b>Backspace</b> Land · <b>Space</b> <span style="color:#f44">Emergency Stop</span><br>
-      <b>Z</b> Center sticks · <b>X</b> <span style="color:#f44">Emergency Stop</span><br>
-      <b>R</b> Record · <b>1</b> Slow · <b>2</b> Normal · <b>3</b> Fast
+    <div class="procedure" id="help-box" style="padding:6px 8px;font-size:10px;">
+      <table style="width:100%;border-collapse:collapse;">
+        <tr><td style="padding:2px 4px;color:#4af;"><b>C</b></td><td style="padding:2px 4px;">Connect WiFi</td><td style="padding:2px 4px;color:#4af;"><b>T</b></td><td style="padding:2px 4px;">Takeoff</td></tr>
+        <tr><td style="padding:2px 4px;color:#4af;"><b>L</b></td><td style="padding:2px 4px;">Land</td><td style="padding:2px 4px;color:#4af;"><b>Backspace</b></td><td style="padding:2px 4px;">Land</td></tr>
+        <tr><td style="padding:2px 4px;color:#4af;"><b>↑↓←→</b></td><td style="padding:2px 4px;">Move</td><td style="padding:2px 4px;color:#4af;"><b>W</b>/<b>S</b></td><td style="padding:2px 4px;">Throttle</td></tr>
+        <tr><td style="padding:2px 4px;color:#4af;"><b>A</b>/<b>D</b></td><td style="padding:2px 4px;">Yaw</td><td style="padding:2px 4px;color:#4af;"><b>Z</b></td><td style="padding:2px 4px;">Center sticks</td></tr>
+        <tr><td style="padding:2px 4px;color:#f44;"><b>Space</b></td><td style="padding:2px 4px;color:#f44;">Emergency Stop</td><td style="padding:2px 4px;color:#f44;"><b>X</b></td><td style="padding:2px 4px;color:#f44;">Emergency Stop</td></tr>
+        <tr><td style="padding:2px 4px;color:#4af;"><b>R</b></td><td style="padding:2px 4px;">Record</td><td style="padding:2px 4px;color:#4af;"><b>1</b><b>2</b><b>3</b></td><td style="padding:2px 4px;">Slow/Normal/Fast</td></tr>
+      </table>
     </div>
     <h2>Log</h2>
     <div class="log" id="log">Ready<br></div>
@@ -242,20 +199,12 @@ let fc=0;
 setInterval(()=>{document.getElementById('fps').textContent=fc;fc=0;},1000);
 document.getElementById('video').addEventListener('load',()=>fc++);
 
-// 3D drone animation (top + side views)
-const droneEl = document.getElementById('drone3d');
-const droneSide = document.getElementById('drone3d-side');
-const d3dAngles = document.getElementById('d3d-angles');
-let dPitch=0, dRoll=0, dYaw=0;
-function update3DDrone() {
-  const p = dPitch * 0.5;
-  const r = dRoll * 0.5;
-  const y = dYaw * 0.3;
-  droneEl.style.transform = `rotateX(${p}deg) rotateZ(${r}deg) rotateY(${y}deg)`;
-  droneSide.style.transform = `rotateY(180deg) rotateZ(${r}deg) rotateX(${-p}deg)`;
-  d3dAngles.textContent = `P:${dPitch.toFixed(1)}° R:${dRoll.toFixed(1)}° Y:${dYaw.toFixed(1)}°`;
+// Convert dBm to percentage (0 = -100dBm, 100 = -30dBm)
+function dbmToPct(dbm) {
+  const v = parseInt(dbm);
+  if (isNaN(v)) return 0;
+  return Math.max(0, Math.min(100, Math.round((v + 100) / 70 * 100)));
 }
-// Override telemetry polling to capture pitch/roll/yaw
 const origPoll = pollTelemetry;
 pollTelemetry = async function() {
   try {
