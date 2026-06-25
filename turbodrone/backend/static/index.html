@@ -145,7 +145,7 @@
     <h2>How To Fly</h2>
     <div class="procedure">
       <b>1. Takeoff</b><br>
-      Press <span class="key">Space</span> or click <b style="color:#2a7">Takeoff</b>.<br>
+      Press <span class="key">T</span> or click <b style="color:#2a7">Takeoff</b>.<br>
       Drone rises to ~1.5m and hovers.<br><br>
 
       <b>2. Fly</b><br>
@@ -159,7 +159,7 @@
       Press <b style="color:#e62">Land</b> button → gradual descent.<br><br>
 
       <b class="danger">⚠ EMERGENCY</b><br>
-      Press <span class="key" style="background:#622;color:#f44">Backspace</span> or <b style="color:#c22">Stop</b> button.<br>
+      Press <span class="key" style="background:#622;color:#f44">Space</span> or <b style="color:#c22">Stop</b> button.<br>
       <span class="danger">Motors cut immediately — drone falls.</span>
     </div>
 
@@ -218,8 +218,8 @@ const KBM={'w':['throttle',1],'s':['throttle',-1],'a':['yaw',-1],'d':['yaw',1],'
 let kbA={};
 document.addEventListener('keydown',e=>{
   if(e.repeat)return;
-  if(e.key===' '){e.preventDefault();sendCmd('takeoff');return;}
-  if(e.key==='Backspace'){sendCmd('estop');return;}
+  if(e.key===' '){e.preventDefault();sendCmd('estop');return;}
+  if(e.key==='Backspace'){sendCmd('takeoff');return;}
   if(e.key in KBM){e.preventDefault();kbA[e.key]=true;axes[KBM[e.key][0]]=KBM[e.key][1];sendAxes();}
 });
 document.addEventListener('keyup',e=>{
