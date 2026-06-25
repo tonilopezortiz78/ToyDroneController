@@ -576,6 +576,19 @@ import pathlib
 _HERE = pathlib.Path(__file__).parent
 _DASHBOARD_HTML = _HERE / "static" / "index.html"
 
+@app.get("/wifi-connect")
+async def wifi_connect():
+    import subprocess
+    try:
+        r = subprocess.run(["nmcli", "dev", "wifi", "connect", "WIFI-UFO-600849"],
+                         capture_output=True, text=True, timeout=10)
+        if r.returncode == 0:
+            return {"status": "Connecting..."}
+        else:
+            return {"status": "Failed", "error": r.stderr.strip()}
+    except Exception as e:
+        return {"status": "Error", "error": str(e)}
+
 @app.get("/", response_class=HTMLResponse)
 async def dashboard():
     if _DASHBOARD_HTML.exists():
