@@ -45,8 +45,8 @@ class CooingdvVideoProtocolAdapter(BaseVideoProtocolAdapter):
     RTSP_PATH: Final = "/webcam"
     
     # Reconnection settings
-    RECONNECT_DELAY: Final = 2.0  # seconds
-    MAX_RECONNECT_ATTEMPTS: Final = 10
+    RECONNECT_DELAY: Final = 1.0  # seconds
+    MAX_RECONNECT_ATTEMPTS: Final = 5
     
     # Frame capture settings
     FRAME_TIMEOUT: Final = 5.0  # seconds without frame triggers reconnect
@@ -183,18 +183,14 @@ class CooingdvVideoProtocolAdapter(BaseVideoProtocolAdapter):
     # Receiver Thread API (matches existing interface)
     # ------------------------------------------------------------------ #
     def start(self) -> None:
-        """Start the video receiver thread."""
+        """Start the video receiver thread. Non-blocking - doesn't wait for stream."""
         if self._rx_thread and self._rx_thread.is_alive():
             return
         
         self._running = True
         self._frame_q = queue.Queue(maxsize=2)
         
-        # Open initial connection
-        if not self._open_stream():
-            self._dbg("[cooingdv-video] Warning: Could not open stream on start")
-        
-        # Start receiver thread
+        # Start receiver thread immediately (it handles reconnection)
         self._rx_thread = threading.Thread(
             target=self._rx_loop,
             daemon=True,
@@ -207,6 +203,9 @@ class CooingdvVideoProtocolAdapter(BaseVideoProtocolAdapter):
         """
         Main receiver loop - reads frames from RTSP stream.
         """
+        # Initial delay to let the server start serving HTTP first
+        time.sleep(1.0)
+        
         while self._running:
             # Check if we have a valid capture
             with self._cap_lock:
