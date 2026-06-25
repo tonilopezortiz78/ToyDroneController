@@ -63,24 +63,7 @@
   .drone3d-ring { position: absolute; width: 56px; height: 56px; border: 1px solid rgba(60,140,255,0.12); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%,-50%); }
   .drone3d-ring2 { position: absolute; width: 68px; height: 68px; border: 1px dashed rgba(60,140,255,0.06); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%,-50%); }
   .drone3d-glow { position: absolute; width: 50px; height: 50px; background: radial-gradient(circle, rgba(60,140,255,0.08) 0%, transparent 70%); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%,-50%); }
-  /* ── 3D Drone ───────────────────────────────────── */
-  .drone3d-wrap { position: absolute; top: 14px; right: 14px; width: 160px; height: 160px; perspective: 600px; background: rgba(0,0,0,0.65); border-radius: 12px; border: 1px solid #4af33; backdrop-filter: blur(4px); }
-  .drone3d-scene { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; transform-style: preserve-3d; }
-  .drone3d { width: 80px; height: 80px; position: relative; transform-style: preserve-3d; transition: transform 0.1s ease-out; }
-  .drone3d-arm { position: absolute; width: 12px; height: 60px; background: linear-gradient(180deg,#4af,#0a2a5a); border-radius: 4px; box-shadow: 0 0 8px rgba(60,140,255,0.3); }
-  .drone3d-arm.tl { top: -30px; left: 4px; transform-origin: bottom center; transform: rotate(-30deg); }
-  .drone3d-arm.tr { top: -30px; right: 4px; transform-origin: bottom center; transform: rotate(30deg); }
-  .drone3d-arm.bl { bottom: -30px; left: 4px; transform-origin: top center; transform: rotate(30deg); }
-  .drone3d-arm.br { bottom: -30px; right: 4px; transform-origin: top center; transform: rotate(-30deg); }
-  .drone3d-body { width: 36px; height: 36px; background: radial-gradient(circle at 35% 35%, #4af, #0a2a5a); border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); box-shadow: 0 0 20px rgba(60,140,255,0.5), inset 0 0 10px rgba(0,0,0,0.5); border: 2px solid #4af; }
-  .drone3d-prop { position: absolute; width: 20px; height: 6px; background: rgba(60,140,255,0.3); border-radius: 3px; box-shadow: 0 0 6px rgba(60,140,255,0.2); }
-  .drone3d-prop.tl { top: -34px; left: -4px; }
-  .drone3d-prop.tr { top: -34px; right: -4px; }
-  .drone3d-prop.bl { bottom: -34px; left: -4px; }
-  .drone3d-prop.br { bottom: -34px; right: -4px; }
-  .drone3d-ring { position: absolute; width: 90px; height: 90px; border: 1px solid rgba(60,140,255,0.15); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%,-50%); }
-  .drone3d-ring2 { position: absolute; width: 110px; height: 110px; border: 1px dashed rgba(60,140,255,0.08); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%,-50%); }
-  .drone3d-glow { position: absolute; width: 80px; height: 80px; background: radial-gradient(circle, rgba(60,140,255,0.1) 0%, transparent 70%); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%,-50%); }
+
 </style>
 </head>
 <body>
@@ -160,13 +143,6 @@
       </div>
     </div>
 
-    <h2>Battery <span style="color:#888;font-size:14px;font-weight:400;text-transform:none;">(in video OSD)</span></h2>
-    <div class="telem-item"><span class="label">Voltage</span><span class="value">Shown on video feed</span></div>
-    <div class="telem-item"><span class="label">Warning</span><span class="value red">Land when blinking</span></div>
-
-    <h2>Telemetry</h2>
-    <div class="telem-grid" id="telem"></div>
-
     <h2>How To Fly</h2>
     <div class="procedure">
       <b>1. Takeoff</b><br>
@@ -188,8 +164,14 @@
       <span class="danger">Motors cut immediately — drone falls.</span>
     </div>
 
+    <div class="row" style="justify-content:space-between;">
+      <span style="font-size:8px;color:#888;"><span id="flight-time">0:00</span></span>
+      <span style="font-size:8px;color:#888;">Flight Time</span>
+    </div>
     <h2>Log</h2>
     <div class="log" id="log">Ready<br></div>
+    <h2>Telemetry</h2>
+    <div class="telem-grid" id="telem"></div>
   </div>
 </div>
 
