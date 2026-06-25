@@ -153,6 +153,12 @@
     <h2>Telemetry</h2>
     <div class="telem-grid" id="telem"></div>
 
+    <h2 style="cursor:pointer;" onclick="toggleHelp()">Keys <span id="help-toggle" style="float:right;color:#4af;font-size:10px;">▼</span></h2>
+    <div class="procedure" id="help-box" style="padding:8px 10px;font-size:11px;">
+      <b>↑↓←→</b> Move · <b>W</b>↑<b>S</b>↓ Throttle · <b>A</b><b>D</b> Yaw<br>
+      <b>T</b> Takeoff · <b>L</b> Land · <b>Z</b> Arm · <b>X</b> Disarm<br>
+      <b>Backspace</b> Takeoff · <b style="color:#f44">Space</b> Stop
+    </div>
     <h2>Log</h2>
     <div class="log" id="log">Ready<br></div>
     <div class="row" style="justify-content:space-between;">
@@ -339,6 +345,11 @@ async function toggleRec() {
   } catch(e) { log('Record error'); }
 }
 
+function toggleHelp() {
+  const b=document.getElementById('help-box'), t=document.getElementById('help-toggle');
+  if(b.style.display==='none'){b.style.display='block';t.textContent='▼';}
+  else{b.style.display='none';t.textContent='▶';}
+}
 connectWS();
 log('Dashboard ready');
 </script>
