@@ -244,30 +244,6 @@ class FrameHub:
 
 FRAME_HUB = FrameHub(per_client_queue_size=2)
 
-# Recording state
-_recording_proc: Optional[subprocess.Popen] = None
-_recording_lock = threading.Lock()
-
-@app.post("/record")
-async def toggle_record():
-    global _recording_proc
-    with _recording_lock:
-        if _recording_proc is not None:
-            _recording_proc.terminate()
-            _recording_proc = None
-            return {"status": "stopped"}
-        else:
-            ts = time.strftime("%Y%m%d_%H%M%S")
-            path = os.path.expanduser(f"~/Videos/drone_rec_{ts}.mkv")
-            os.makedirs(os.path.dirname(path), exist_ok=True)
-            _recording_proc = subprocess.Popen([
-                "ffmpeg", "-y",
-                "-i", f"rtsp://{os.getenv('DRONE_IP', '192.168.1.1')}:7070/webcam",
-                "-vcodec", "libx264", "-preset", "ultrafast",
-                "-vf", "transpose=1",  # rotate 90°
-                path
-            ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            return {"status": "recording", "path": path}
 
 
 @asynccontextmanager
@@ -570,6 +546,32 @@ video_keepalive = None  # legacy; no longer used
 # ───────────────────────────────────────────────────────────────
 # Dashboard root
 # ───────────────────────────────────────────────────────────────
+
+# Recording state
+_recording_proc: Optional[subprocess.Popen] = None
+_recording_lock = threading.Lock()
+
+@app.post("/record")
+async def toggle_record():
+    global _recording_proc
+    with _recording_lock:
+        if _recording_proc is not None:
+            _recording_proc.terminate()
+            _recording_proc = None
+            return {"status": "stopped"}
+        else:
+            ts = time.strftime("%Y%m%d_%H%M%S")
+            path = os.path.expanduser(f"~/Videos/drone_rec_{ts}.mkv")
+            os.makedirs(os.path.dirname(path), exist_ok=True)
+            _recording_proc = subprocess.Popen([
+                "ffmpeg", "-y",
+                "-i", "rtsp://192.168.1.1:7070/webcam",
+                "-vcodec", "libx264", "-preset", "ultrafast",
+                "-vf", "transpose=1",
+                path
+            ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            return {"status": "recording", "path": path}
+
 import pathlib
 _HERE = pathlib.Path(__file__).parent
 _DASHBOARD_HTML = _HERE / "static" / "index.html"
