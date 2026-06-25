@@ -223,10 +223,10 @@ document.addEventListener('keydown',e=>{
   if(e.repeat)return;
   if(e.key===' '){e.preventDefault();sendCmd('estop');return;}
   if(e.key==='Backspace'){sendCmd('takeoff');return;}
-  if(e.key==='t'||e.key==='T'){sendCmd('takeoff');return;}
-  if(e.key==='l'||e.key==='L'){sendCmd('land');return;}
-  if(e.key==='a'||e.key==='A'){sendCmd('takeoff');return;}
-  if(e.key==='d'||e.key==='D'){sendCmd('estop');return;}
+  if(e.key==='t'){sendCmd('takeoff');return;}
+  if(e.key==='l'){sendCmd('land');return;}
+  if(e.key==='a'){sendCmd('takeoff');return;}
+  if(e.key==='d'){sendCmd('estop');return;}
   if(e.key in KBM){e.preventDefault();kbA[e.key]=true;axes[KBM[e.key][0]]=KBM[e.key][1];sendAxes();}
 });
 document.addEventListener('keyup',e=>{
