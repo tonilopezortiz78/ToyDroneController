@@ -149,10 +149,10 @@
       Drone rises to ~1.5m and hovers.<br><br>
 
       <b>2. Fly</b><br>
-      <span class="key">W</span><span class="key">S</span> → Pitch (forward/back)<br>
-      <span class="key">A</span><span class="key">D</span> → Roll (left/right)<br>
-      <span class="key">↑</span><span class="key">↓</span> → Throttle (altitude)<br>
-      <span class="key">←</span><span class="key">→</span> → Yaw (rotate)<br>
+      <span class="key">↑</span><span class="key">↓</span> → Pitch (forward/back)<br>
+      <span class="key">←</span><span class="key">→</span> → Roll (left/right)<br>
+      <span class="key">W</span><span class="key">S</span> → Throttle (up/down)<br>
+      <span class="key">A</span><span class="key">D</span> → Yaw (rotate)<br>
       Hold key = full deflection | Release = center<br><br>
 
       <b>3. Land</b><br>
@@ -214,7 +214,7 @@ jsetup('jleft','kl','yaw','throttle',true);
 jsetup('jright','kr','roll','pitch',true);
 
 // Keyboard
-const KBM={'w':['pitch',1],'s':['pitch',-1],'a':['roll',-1],'d':['roll',1],'ArrowUp':['throttle',1],'ArrowDown':['throttle',-1],'ArrowLeft':['yaw',-1],'ArrowRight':['yaw',1]};
+const KBM={'w':['throttle',1],'s':['throttle',-1],'a':['yaw',-1],'d':['yaw',1],'ArrowUp':['pitch',1],'ArrowDown':['pitch',-1],'ArrowLeft':['roll',-1],'ArrowRight':['roll',1]};
 let kbA={};
 document.addEventListener('keydown',e=>{
   if(e.repeat)return;
