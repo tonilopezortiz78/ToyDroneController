@@ -117,21 +117,21 @@ def clear_oneshot_flags():
 
 # ── Threads ───────────────────────────────────────────────────────────
 
-def heartbeat_loop():
+def heartbeat_loop(drone_ip: str):
     """Send heartbeat every 1s."""
     global running
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.bind(("", 0))
     while running:
         try:
-            send_heartbeat(s)
+            s.sendto(bytes([0x01, 0x01]), (drone_ip, CTRL_PORT))
         except OSError:
             pass
         time.sleep(1)
     s.close()
 
 
-def control_loop():
+def control_loop(drone_ip: str):
     """Send control packets at ~20 Hz."""
     global running
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -139,7 +139,7 @@ def control_loop():
     while running:
         pkt = state.to_packet()
         try:
-            s.sendto(pkt, (DRONE_IP, CTRL_PORT))
+            s.sendto(pkt, (drone_ip, CTRL_PORT))
         except OSError:
             pass
         clear_oneshot_flags()
@@ -177,8 +177,8 @@ def main():
     print(f"  Video: RTSP :{RTSP_PORT}/webcam")
 
     # Start threads
-    threading.Thread(target=heartbeat_loop, daemon=True).start()
-    threading.Thread(target=control_loop, daemon=True).start()
+    threading.Thread(target=heartbeat_loop, args=(args.ip,), daemon=True).start()
+    threading.Thread(target=control_loop, args=(args.ip,), daemon=True).start()
 
     time.sleep(0.5)
 
@@ -226,9 +226,6 @@ def main():
             break
 
         if key == 255:
-            # No key pressed — set throttle hold but don't reset
-            if state.armed:
-                pass  # maintain throttle
             continue
 
         handle_key(key)

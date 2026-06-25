@@ -9,7 +9,7 @@
   body { font-family: 'Segoe UI', sans-serif; background: #0a0a0f; color: #e0e0e0; height: 100vh; overflow: hidden; font-size: 14px; }
   .container { display: flex; height: 100vh; }
   .video-panel { flex: 4; display: flex; align-items: center; justify-content: center; background: #000; position: relative; overflow: hidden; }
-  #video { width: 720px; height: 960px; object-fit: contain; image-rendering: auto; }
+  #video { max-width: 100%; max-height: 100%; object-fit: contain; image-rendering: auto; }
   .sidebar { width: 360px; background: #14141f; padding: 12px; display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
   h2 { color: #fff; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #2a2a3a; padding-bottom: 5px; margin-top: 3px; }
   .row { display: flex; gap: 6px; flex-wrap: wrap; }
@@ -77,6 +77,7 @@
       <button class="btn-to" onclick="sendCmd('takeoff')">Takeoff</button>
       <button class="btn-ld" onclick="sendCmd('land')">Land</button>
       <button class="btn-stop" onclick="sendCmd('estop')">Stop</button>
+      <button class="btn-hl" onclick="sendCmd('calibrate')">Calibrate</button>
       <button class="btn-hl" onclick="toggleHL()">Headless</button>
     </div>
     <div class="btn-group">
@@ -97,7 +98,7 @@
     <h2 style="cursor:pointer;" onclick="toggleHelp()">Keys <span id="help-toggle" style="float:right;color:#4af;font-size:10px;">▼</span></h2>
     <div class="procedure" id="help-box" style="padding:6px 8px;font-size:10px;">
       <table style="width:100%;border-collapse:collapse;">
-        <tr><td style="padding:2px 4px;color:#4af;"><b>T</b></td><td style="padding:2px 4px;">Takeoff</td><td style="padding:2px 4px;color:#4af;"><b>L</b></td><td style="padding:2px 4px;">Land</td></tr>
+        <tr><td style="padding:2px 4px;color:#4af;"><b>T</b></td><td style="padding:2px 4px;">Takeoff</td><td style="padding:2px 4px;color:#4af;"><b>K</b></td><td style="padding:2px 4px;">Calibrate</td></tr>
         <tr><td style="padding:2px 4px;color:#4af;"><b>L</b></td><td style="padding:2px 4px;">Land</td><td style="padding:2px 4px;color:#4af;"><b>Backspace</b></td><td style="padding:2px 4px;">Land</td></tr>
         <tr><td style="padding:2px 4px;color:#4af;"><b>↑↓←→</b></td><td style="padding:2px 4px;">Move</td><td style="padding:2px 4px;color:#4af;"><b>W</b>/<b>S</b></td><td style="padding:2px 4px;">Throttle</td></tr>
         <tr><td style="padding:2px 4px;color:#4af;"><b>A</b>/<b>D</b></td><td style="padding:2px 4px;">Yaw</td><td style="padding:2px 4px;color:#4af;"><b>Z</b></td><td style="padding:2px 4px;">Center sticks</td></tr>
@@ -105,6 +106,14 @@
         <tr><td style="padding:2px 4px;color:#4af;"><b>R</b></td><td style="padding:2px 4px;">Record</td><td style="padding:2px 4px;color:#4af;"><b>I</b></td><td style="padding:2px 4px;">Reconnect video</td></tr>
         <tr><td style="padding:2px 4px;color:#4af;"><b>1</b><b>2</b><b>3</b></td><td style="padding:2px 4px;">Slow/Normal/Fast</td><td style="padding:2px 4px;color:#4af;"><b>C</b></td><td style="padding:2px 4px;">Connect WiFi</td></tr>
       </table>
+    </div>
+    <h2>Video Stats</h2>
+    <div class="telem-grid" id="vstats">
+      <div class="telem-item"><span class="label">FPS</span><span class="value" id="vs-fps">0</span></div>
+      <div class="telem-item"><span class="label">Frames</span><span class="value" id="vs-frames">0</span></div>
+      <div class="telem-item"><span class="label">Dropped</span><span class="value" id="vs-dropped">0</span></div>
+      <div class="telem-item"><span class="label">Reconnects</span><span class="value" id="vs-reconn">0</span></div>
+      <div class="telem-item"><span class="label">Resolution</span><span class="value" id="vs-res">--</span></div>
     </div>
     <h2>Log</h2>
     <div class="log" id="log">Ready<br></div>
@@ -122,18 +131,24 @@ const WS_URL = `ws://${location.host}/ws`;
 let ws = null, wsOK = false;
 let axes = { throttle:0, yaw:0, pitch:0, roll:0 };
 
-function log(m) { const e=document.getElementById('log'); e.innerHTML+=m+'<br>'; e.scrollTop=e.scrollHeight; }
+function ts() { return new Date().toLocaleTimeString('en-US', {hour12:false}) + '.' + String(Date.now() % 1000).padStart(3,'0'); }
+function log(m) { const t=ts(); document.getElementById('log').innerHTML+=`[${t}] ${m}<br>`; document.getElementById('log').scrollTop=document.getElementById('log').scrollHeight; console.log(`[${t}] ${m}`); }
+function logWarn(m) { const t=ts(); console.warn(`[${t}] ${m}`); }
+function logError(m) { const t=ts(); console.error(`[${t}] ${m}`); }
 
 function connectWS() {
   ws = new WebSocket(WS_URL);
-  ws.onopen = () => { wsOK=true; document.getElementById('bc-conn').className='badge on'; document.getElementById('bc-conn').textContent='Connected'; log('Connected'); };
-  ws.onclose = () => { wsOK=false; document.getElementById('bc-conn').className='badge off'; document.getElementById('bc-conn').textContent='Disconnected'; setTimeout(connectWS,1000); };
+  ws.onopen = () => { wsOK=true; document.getElementById('bc-conn').className='badge on'; document.getElementById('bc-conn').textContent='Connected'; log('Connected'); logWarn('WS connected'); };
+  ws.onclose = (e) => { wsOK=false; document.getElementById('bc-conn').className='badge off'; document.getElementById('bc-conn').textContent='Disconnected'; logWarn(`WS closed (code=${e.code})`); setTimeout(connectWS,1000); };
+  ws.onerror = (e) => { logError(`WS error: ${e.type}`); };
 }
-function sendCmd(t) { if(!wsOK)return; ws.send(JSON.stringify({type:t})); log(t); }
+function sendCmd(t) { if(!wsOK)return logWarn(`sendCmd skipped: not connected`); ws.send(JSON.stringify({type:t})); log(t); logWarn(`CMD: ${t}`); }
 function toggleHL() { axes.headless=!axes.headless; sendCmd('headless'); }
 function sendAxes() {
   if(!wsOK) return;
-  ws.send(JSON.stringify({type:'axes',mode:'abs',throttle:axes.throttle,yaw:axes.yaw,pitch:axes.pitch,roll:axes.roll}));
+  const msg = JSON.stringify({type:'axes',mode:'abs',throttle:axes.throttle,yaw:axes.yaw,pitch:axes.pitch,roll:axes.roll});
+  ws.send(msg);
+  console.log(`[${ts()}] AXES T=${axes.throttle} Y=${axes.yaw} P=${axes.pitch} R=${axes.roll}`);
 }
 
 // Keyboard
@@ -144,12 +159,13 @@ document.addEventListener('keydown',e=>{
   if(e.key===' '){e.preventDefault();sendCmd('estop');return;}
   if(e.key==='Backspace'){sendCmd('land');return;}
   if(e.key==='t'){sendCmd('takeoff');return;}
+  if(e.key==='k'){sendCmd('calibrate');return;}
   if(e.key==='l'){sendCmd('land');return;}
   if(e.key==='z'){axes={throttle:0,yaw:0,pitch:0,roll:0};sendAxes();return;}
   if(e.key==='x'){sendCmd('estop');return;}
   if(e.key==='r'){e.preventDefault();toggleRec();return;}
-  if(e.key==='c'){fetch('/wifi-connect').then(r=>r.json()).then(d=>log(d.status)).catch(()=>log('WiFi failed'));return;}
-  if(e.key==='i'){fetch('/reconnect',{method:'POST'}).then(r=>r.json()).then(d=>log(d.status)).catch(()=>log('Reconnect failed'));return;}
+  if(e.key==='c'){fetch('/wifi-connect').then(r=>r.json()).then(d=>log(d.status)).catch(e=>logError(`WiFi connect error: ${e.message}`));return;}
+  if(e.key==='i'){fetch('/reconnect',{method:'POST'}).then(r=>r.json()).then(d=>log(d.status)).catch(e=>logError(`Reconnect error: ${e.message}`));return;}
   if(e.key in KBM){e.preventDefault();kbA[e.key]=true;axes[KBM[e.key][0]]=KBM[e.key][1];sendAxes();}
 });
 document.addEventListener('keyup',e=>{
@@ -192,8 +208,19 @@ async function pollTelemetry() {
       }
     }
     TELEM_EL.innerHTML = html;
+
+    // Video stats
+    if (d.video) {
+      document.getElementById('vs-fps').textContent = d.video.fps || 0;
+      document.getElementById('vs-frames').textContent = d.video.frames_ok || 0;
+      document.getElementById('vs-dropped').textContent = d.video.frames_dropped || 0;
+      document.getElementById('vs-reconn').textContent = d.video.reconnects || 0;
+      const w = d.video.width || 0;
+      const h = d.video.height || 0;
+      document.getElementById('vs-res').textContent = w && h ? `${w}x${h}` : '--';
+    }
   } catch(_) {}
-}
+};
 setInterval(pollTelemetry,400);
 
 // Frame counter
@@ -245,6 +272,17 @@ pollTelemetry = async function() {
       }
     }
     TELEM_EL.innerHTML = html;
+
+    // Video stats
+    if (d.video) {
+      document.getElementById('vs-fps').textContent = d.video.fps || 0;
+      document.getElementById('vs-frames').textContent = d.video.frames_ok || 0;
+      document.getElementById('vs-dropped').textContent = d.video.frames_dropped || 0;
+      document.getElementById('vs-reconn').textContent = d.video.reconnects || 0;
+      const w = d.video.width || 0;
+      const h = d.video.height || 0;
+      document.getElementById('vs-res').textContent = w && h ? `${w}x${h}` : '--';
+    }
   } catch(_) {}
 };
 setInterval(pollTelemetry,400);
@@ -281,7 +319,7 @@ async function toggleRec() {
       btn.className = 'btn-rec';
       log('Recording stopped');
     }
-  } catch(e) { log('Record error'); }
+  } catch(e) { logError(`Record error: ${e.message}`); }
 }
 
 function toggleHelp() {

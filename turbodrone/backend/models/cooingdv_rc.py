@@ -56,6 +56,9 @@ class CooingdvRcModel(BaseRCModel):
         self.headless_flag = False      # Headless mode (0x10) - toggle state
         self.calibration_flag = False   # Gyro calibration (0x80)
 
+        # Speed index (1=slow, 2=normal, 3=fast)
+        self.speed_index = 2
+
         # Track last motion direction for each axis
         self.last_throttle_dir = 0
         self.last_yaw_dir = 0
@@ -98,6 +101,9 @@ class CooingdvRcModel(BaseRCModel):
         """Toggle headless mode on/off."""
         self.headless_flag = not self.headless_flag
 
+    def set_speed_index(self, speed_index: int) -> None:
+        self.speed_index = max(1, min(3, int(speed_index)))
+
     def calibrate_gyro(self):
         """Initiate gyroscope calibration. Drone should be on flat surface."""
         self.calibration_flag = True
@@ -109,6 +115,7 @@ class CooingdvRcModel(BaseRCModel):
             "pitch": self.pitch,
             "roll": self.roll,
             "headless": self.headless_flag,
+            "speed_index": self.speed_index,
         }
 
     def set_strategy(self, strategy) -> None:

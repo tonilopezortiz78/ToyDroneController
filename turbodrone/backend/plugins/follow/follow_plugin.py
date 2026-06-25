@@ -63,6 +63,9 @@ class FollowPlugin(Plugin):
             invert_pitch=os.getenv("FOLLOW_INVERT_PITCH", "false").lower() in ("1", "true", "yes"),
             yaw_speed=float(os.getenv("FOLLOW_YAW_SPEED", "20.0")),
             pitch_speed=float(os.getenv("FOLLOW_PITCH_SPEED", "20.0")),
+            vert_deadzone=float(os.getenv("FOLLOW_VERT_DEADZONE", "0.10")),
+            vert_speed=float(os.getenv("FOLLOW_VERT_SPEED", "10.0")),
+            invert_vert=os.getenv("FOLLOW_INVERT_VERT", "false").lower() in ("1", "true", "yes"),
         )
 
         # ---- Set DirectStrategy for follow control ----
@@ -158,11 +161,12 @@ class FollowPlugin(Plugin):
             self.send_overlay(overlay)
 
             # Calculate and send commands
-            yaw, pitch = self.ctrl.compute(
+            yaw, pitch, throttle = self.ctrl.compute(
                 box_center_x=(x1 + box_w / 2) / frame_w,
+                box_center_y=(y1 + box_h / 2) / frame_h,
                 box_width=box_w / frame_w,
             )
-            self.fc.set_axes_from("follow", throttle=0, yaw=yaw / 100.0, pitch=pitch / 100.0, roll=0)
+            self.fc.set_axes_from("follow", throttle=throttle / 100.0, yaw=yaw / 100.0, pitch=pitch / 100.0, roll=0)
 
             # Periodic logging
             if now - last_log_time >= self.log_interval:

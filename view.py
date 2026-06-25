@@ -51,6 +51,7 @@ def view_stream(drone_ip: str, transport: str):
     print(f"  Ctrl:  UDP {drone_ip}:{CTRL_PORT}")
     print()
 
+    os.environ["OPENCV_FFMPEG_CAPTURE_OPTIONS"] = f"rtsp_transport;{transport}|fflags;nobuffer|flags;low_delay"
     cap = cv2.VideoCapture(rtsp_url, cv2.CAP_FFMPEG)
     cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
 
@@ -94,8 +95,8 @@ def view_stream(drone_ip: str, transport: str):
 def main():
     parser = argparse.ArgumentParser(description="RC UFO Drone Stream Viewer")
     parser.add_argument("--ip", default=DRONE_IP, help="Drone IP address")
-    parser.add_argument("--rtsp-transport", choices=["tcp", "udp"], default="udp",
-                        help="RTSP transport protocol (default: udp)")
+    parser.add_argument("--rtsp-transport", choices=["tcp", "udp"], default="tcp",
+                        help="RTSP transport protocol (default: tcp)")
     args = parser.parse_args()
 
     print("=" * 50)

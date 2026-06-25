@@ -7,7 +7,6 @@ import os
 from contextlib import asynccontextmanager
 from typing import Any, Optional
 import logging
-import os
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -165,6 +164,18 @@ def _control_capabilities_for_drone(drone_type: str) -> dict[str, bool]:
         "speed_control": False,
     }
 
+def _rtsp_url_for_drone(drone_type: str, drone_ip: str) -> str:
+    """Return the RTSP URL for the given drone type and IP, or empty if unsupported."""
+    if drone_type in COOINGDV_DRONE_TYPES:
+        if drone_type == "cooingdv_jieli":
+            return f"rtsp://{drone_ip}:{os.getenv('JIELI_RTSP_PORT', '554')}/live"
+        return f"rtsp://{drone_ip}:7070/webcam"
+    if drone_type == "x69_lg":
+        rtsp_path = os.getenv("X69_LG_RTSP_PATH", "/live/ch00_1")
+        custom_url = os.getenv("X69_LG_RTSP_URL", "").strip()
+        return custom_url or f"rtsp://{drone_ip}:{os.getenv('X69_LG_RTSP_PORT', '554')}{rtsp_path}"
+    return ""
+
 def _coerce_camera_tilt_state(data: dict[str, Any]) -> Optional[int]:
     """
     Convert frontend-facing tilt directions into the model's raw tilt state.
@@ -254,6 +265,9 @@ async def lifespan(app: FastAPI):
     drone_type = os.getenv("DRONE_TYPE", "s2x").lower()
     active_drone_type = drone_type
     control_capabilities = _control_capabilities_for_drone(drone_type)
+
+    # Determine the active drone IP and RTSP URL for recording
+    global active_drone_ip, active_rtsp_url
     
     logger.info("[main] Using drone type: %s", drone_type)
 
@@ -439,6 +453,10 @@ async def lifespan(app: FastAPI):
     else:
         raise ValueError(f"Unknown drone type: {drone_type}")
 
+    active_drone_ip = drone_ip
+    active_rtsp_url = _rtsp_url_for_drone(drone_type, drone_ip)
+    logger.info("[main] Drone IP=%s RTSP URL=%s", active_drone_ip, active_rtsp_url or "(none)")
+
     # 1. Video – let the service create / recycle the adapter
     video_service_args = {
         "protocol_adapter_class": video_adapter_cls,
@@ -539,9 +557,9 @@ flight_controller: Optional[FlightController] = None
 receiver: Optional[VideoReceiverService] = None
 plugin_manager: Optional[PluginManager] = None
 active_drone_type = os.getenv("DRONE_TYPE", "s2x").lower()
+active_drone_ip = os.getenv("DRONE_IP", "")
+active_rtsp_url = ""
 control_capabilities = _control_capabilities_for_drone(active_drone_type)
-
-video_keepalive = None  # legacy; no longer used
 
 # ───────────────────────────────────────────────────────────────
 # Dashboard root
@@ -554,6 +572,9 @@ _recording_lock = threading.Lock()
 @app.post("/record")
 async def toggle_record():
     global _recording_proc
+    rtsp = active_rtsp_url
+    if not rtsp:
+        return {"status": "error", "error": "Recording not supported for active drone type"}
     with _recording_lock:
         if _recording_proc is not None:
             _recording_proc.terminate()
@@ -567,7 +588,7 @@ async def toggle_record():
             # Quick RTSP check before recording
             r = subprocess.run(
                 ["timeout", "2", "ffprobe", "-v", "quiet", "-print_format", "json",
-                 "-show_streams", "rtsp://192.168.1.1:7070/webcam"],
+                 "-show_streams", rtsp],
                 capture_output=True, timeout=3
             )
             if r.returncode != 0 or b'"codec_type": "video"' not in r.stdout:
@@ -578,7 +599,7 @@ async def toggle_record():
             os.makedirs(os.path.dirname(path), exist_ok=True)
             _recording_proc = subprocess.Popen([
                 "ffmpeg", "-y",
-                "-i", "rtsp://192.168.1.1:7070/webcam",
+                "-i", rtsp,
                 "-vcodec", "libx264", "-preset", "medium",
                 "-crf", "18", "-b:v", "5M",
                 "-vf", "transpose=1,scale=640:480",
@@ -592,13 +613,16 @@ _HERE = pathlib.Path(__file__).parent
 _DASHBOARD_HTML = _HERE / "static" / "index.html"
 
 @app.get("/wifi-connect")
-async def wifi_connect():
+async def wifi_connect(ssid: str = ""):
     import subprocess
+    target_ssid = ssid or os.getenv("DRONE_SSID", "")
+    if not target_ssid:
+        return {"status": "Error", "error": "No SSID configured (set DRONE_SSID env or pass ?ssid=)"}
     try:
-        r = subprocess.run(["nmcli", "dev", "wifi", "connect", "WIFI-UFO-600849"],
+        r = subprocess.run(["nmcli", "dev", "wifi", "connect", target_ssid],
                          capture_output=True, text=True, timeout=10)
         if r.returncode == 0:
-            return {"status": "Connecting..."}
+            return {"status": "Connecting...", "ssid": target_ssid}
         else:
             return {"status": "Failed", "error": r.stderr.strip()}
     except Exception as e:
@@ -654,6 +678,13 @@ async def get_status():
 
     rx = {}
     proto = getattr(flight_controller, 'protocol', None) if flight_controller else None
+
+    video_stats = {}
+    if receiver and receiver.protocol and hasattr(receiver.protocol, 'get_stats'):
+        try:
+            video_stats = receiver.protocol.get_stats()
+        except Exception:
+            pass
     if proto:
         if hasattr(proto, 'last_rx_packet'):
             rx["last_packet"] = proto.last_rx_packet.hex() if proto.last_rx_packet else None
@@ -666,6 +697,7 @@ async def get_status():
         "wifi": wifi,
         "telemetry": telem,
         "rx": rx,
+        "video": video_stats,
         "drone_type": active_drone_type,
     }
 
@@ -798,6 +830,11 @@ async def ws_endpoint(websocket: WebSocket) -> None:
             elif msg_type == "takeoff":
                 try:
                     flight_controller.model.takeoff()
+                except Exception:
+                    pass
+            elif msg_type == "calibrate":
+                try:
+                    flight_controller.model.calibrate_gyro()
                 except Exception:
                     pass
             elif msg_type == "land":

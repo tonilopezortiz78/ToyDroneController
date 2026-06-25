@@ -10,8 +10,11 @@ This adapter uses OpenCV's VideoCapture to connect to the RTSP stream
 and provides frames through the standard turbodrone interface.
 """
 
+import io
 import logging
+import subprocess
 import cv2
+import numpy as np
 import queue
 import threading
 import time
@@ -45,12 +48,12 @@ class CooingdvVideoProtocolAdapter(BaseVideoProtocolAdapter):
     RTSP_PATH: Final = "/webcam"
     
     # Reconnection settings
-    RECONNECT_DELAY: Final = 0.3  # seconds
+    RECONNECT_DELAY: Final = 1.0  # seconds
     MAX_RECONNECT_ATTEMPTS: Final = 100
     
     # Frame capture settings
-    FRAME_TIMEOUT: Final = 2.0  # seconds without frame triggers reconnect
-    READ_FAILURE_BACKOFF: Final = 0.01  # seconds between failed reads
+    FRAME_TIMEOUT: Final = 5.0  # seconds without frame triggers reconnect
+    READ_FAILURE_BACKOFF: Final = 0.05  # seconds between failed reads
 
     def __init__(
         self,
@@ -70,9 +73,10 @@ class CooingdvVideoProtocolAdapter(BaseVideoProtocolAdapter):
         self.rtsp_url = f"rtsp://{drone_ip}:{video_port}{self.RTSP_PATH}"
         self._dbg(f"[cooingdv-video] RTSP URL: {self.rtsp_url}")
         
-        # OpenCV capture object
-        self._cap: Optional[cv2.VideoCapture] = None
-        self._cap_lock = threading.Lock()
+        # ffmpeg process handle
+        self._proc: Optional[subprocess.Popen] = None
+        self._pipe: Optional[io.BufferedReader] = None
+        self._stream_lock = threading.Lock()
         
         # Threading
         self._running = False
@@ -88,23 +92,26 @@ class CooingdvVideoProtocolAdapter(BaseVideoProtocolAdapter):
         self.frames_dropped = 0
         self.reconnect_count = 0
         self._last_frame_time = time.time()
+        self._fps_frames = 0
+        self._fps_time = time.monotonic()
+        self.current_fps = 0
+        self.video_width = 0
+        self.video_height = 0
 
     # ------------------------------------------------------------------ #
-    # RTSP Connection Management
+    # RTSP Connection Management (via ffmpeg subprocess)
     # ------------------------------------------------------------------ #
     def _open_stream(self) -> bool:
         """
-        Open the RTSP stream. Returns True on success.
-        Uses ffprobe to check stream health first, preventing OpenCV hangs.
+        Open the RTSP stream via ffmpeg subprocess (UDP transport).
+        ffmpeg pipes MJPEG frames to stdout for reading.
         """
-        with self._cap_lock:
-            if self._cap is not None:
-                self._cap.release()
+        with self._stream_lock:
+            self._close_stream()
             
             self._dbg(f"[cooingdv-video] Opening RTSP stream: {self.rtsp_url}")
             
-            # Probe stream with ffprobe (non-blocking, timed)
-            import subprocess
+            # Probe stream with ffprobe first
             r = subprocess.run(
                 ["timeout", "3", "ffprobe", "-v", "quiet", "-print_format", "json",
                  "-show_streams", self.rtsp_url],
@@ -112,28 +119,45 @@ class CooingdvVideoProtocolAdapter(BaseVideoProtocolAdapter):
             )
             if r.returncode != 0 or b'"codec_type": "video"' not in r.stdout:
                 self._dbg("[cooingdv-video] ffprobe check failed, skipping stream")
-                self._cap = None
                 return False
             
-            # Create capture with FFMPEG backend (now safe to call)
-            self._cap = cv2.VideoCapture(self.rtsp_url, cv2.CAP_FFMPEG)
-            self._cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
-            
-            if self._cap.isOpened():
-                self._dbg("[cooingdv-video] Stream opened successfully")
+            # Start ffmpeg with UDP transport (drone rejects TCP)
+            cmd = [
+                "ffmpeg", "-rtsp_transport", "udp",
+                "-i", self.rtsp_url,
+                "-f", "image2pipe",
+                "-vcodec", "mjpeg",
+                "-q:v", "2",
+                "-an",
+                "-"
+            ]
+            try:
+                self._proc = subprocess.Popen(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
+                    bufsize=0
+                )
+                self._pipe = io.BufferedReader(self._proc.stdout)
+                self._dbg("[cooingdv-video] ffmpeg process started")
                 self._last_frame_time = time.time()
                 return True
-            else:
-                self._dbg("[cooingdv-video] Failed to open stream")
-                self._cap = None
+            except Exception as e:
+                self._dbg(f"[cooingdv-video] Failed to start ffmpeg: {e}")
+                self._close_stream()
                 return False
 
     def _close_stream(self) -> None:
-        """Close the RTSP stream."""
-        with self._cap_lock:
-            if self._cap is not None:
-                self._cap.release()
-                self._cap = None
+        """Kill the ffmpeg subprocess."""
+        with self._stream_lock:
+            if self._proc:
+                try:
+                    self._proc.kill()
+                    self._proc.wait(timeout=2)
+                except Exception:
+                    pass
+                self._proc = None
+                self._pipe = None
                 self._dbg("[cooingdv-video] Stream closed")
 
     def _reconnect(self) -> bool:
@@ -201,68 +225,115 @@ class CooingdvVideoProtocolAdapter(BaseVideoProtocolAdapter):
 
     def _rx_loop(self) -> None:
         """
-        Main receiver loop - reads frames from RTSP stream.
+        Main receiver loop - reads frames from ffmpeg pipe.
         """
-        # Initial delay to let the server start serving HTTP first
         time.sleep(1.0)
-        
+
+        read_buf = b""
         while self._running:
-            # Check if we have a valid capture
-            with self._cap_lock:
-                cap = self._cap
-            
-            if cap is None or not cap.isOpened():
+            with self._stream_lock:
+                proc_ok = self._proc is not None and self._proc.poll() is None
+                pipe = self._pipe
+
+            if not proc_ok or not pipe:
+                self._dbg("[cooingdv-video] ffmpeg not running, reconnecting...")
                 if not self._reconnect():
-                    self._dbg("[cooingdv-video] Failed to reconnect, retrying...")
                     time.sleep(self.RECONNECT_DELAY)
                 continue
-            
-            # Try to read a frame
+
             try:
-                ret, frame = cap.read()
-                
-                if not ret or frame is None:
-                    # Check for timeout
+                # Read raw bytes from pipe
+                chunk = pipe.read(65536)
+                if not chunk:
                     if time.time() - self._last_frame_time > self.FRAME_TIMEOUT:
                         self._dbg("[cooingdv-video] Frame timeout, reconnecting...")
                         self._reconnect()
                     else:
                         time.sleep(self.READ_FAILURE_BACKOFF)
                     continue
-                
-                self._last_frame_time = time.time()
-                
-                # Rotate 90° clockwise (camera is mounted 90° off)
-                frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
-                
-                # Encode as JPEG (OpenCV handles BGR→YCbCr conversion internally)
-                encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 85]
-                _, jpeg_data = cv2.imencode('.jpg', frame, encode_param)
-                
-                video_frame = self.handle_payload(jpeg_data.tobytes())
-                if video_frame is None:
-                    continue
 
-                self.frames_ok += 1
-                
-                # Add to queue (drop if full)
-                try:
-                    self._frame_q.put(video_frame, timeout=0.1)
-                except queue.Full:
-                    self.frames_dropped += 1
-                    # Drop oldest frame and add new one
+                read_buf += chunk
+
+                # Extract JPEGs from the byte stream
+                soi = 0
+                while self._running:
+                    # Find start marker
+                    soi = read_buf.find(b'\xff\xd8', soi)
+                    if soi < 0:
+                        read_buf = read_buf[-4096:] if len(read_buf) > 4096 else b""
+                        break
+
+                    # Find end marker
+                    eoi = read_buf.find(b'\xff\xd9', soi)
+                    if eoi < 0:
+                        # Incomplete frame, keep buffer
+                        if soi > 0:
+                            read_buf = read_buf[soi:]
+                        break
+
+                    jpeg_bytes = read_buf[soi:eoi + 2]
+                    soi = eoi + 2
+
+                    # Decode JPEG to OpenCV frame
+                    frame = cv2.imdecode(np.frombuffer(jpeg_bytes, dtype=np.uint8), cv2.IMREAD_COLOR)
+                    if frame is None:
+                        continue
+
+                    self._last_frame_time = time.time()
+
+                    if self.video_width == 0:
+                        h, w = frame.shape[:2]
+                        self.video_width = w
+                        self.video_height = h
+
+                    # Rotate 90° clockwise (camera is mounted 90° off)
+                    frame = cv2.rotate(frame, cv2.ROTATE_90_CLOCKWISE)
+
+                    # Re-encode as JPEG at consistent quality
+                    encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 85]
+                    _, jpeg_data = cv2.imencode('.jpg', frame, encode_param)
+
+                    video_frame = self.handle_payload(jpeg_data.tobytes())
+                    if video_frame is None:
+                        continue
+
+                    self.frames_ok += 1
+
+                    # FPS counter
+                    self._fps_frames += 1
+                    now = time.monotonic()
+                    if now - self._fps_time >= 1.0:
+                        self.current_fps = round(self._fps_frames / (now - self._fps_time))
+                        self._fps_frames = 0
+                        self._fps_time = now
+
+                    # Add to queue (drop if full)
                     try:
-                        self._frame_q.get_nowait()
                         self._frame_q.put(video_frame, timeout=0.1)
-                    except (queue.Empty, queue.Full):
-                        pass
-                
-            except cv2.error as e:
-                self._dbg(f"[cooingdv-video] OpenCV error: {e}")
-                self._reconnect()
+                    except queue.Full:
+                        self.frames_dropped += 1
+                        try:
+                            self._frame_q.get_nowait()
+                            self._frame_q.put(video_frame, timeout=0.1)
+                        except (queue.Empty, queue.Full):
+                            pass
+
+                # Trim processed data from buffer
+                read_buf = read_buf[soi:] if soi > 0 else b""
+
             except Exception as e:
-                self._dbg(f"[cooingdv-video] Unexpected error: {e}")
-                time.sleep(0.1)
+                self._dbg(f"[cooingdv-video] Error: {e}")
+                self._reconnect()
+
+    def get_stats(self) -> dict:
+        return {
+            "frames_ok": self.frames_ok,
+            "frames_dropped": self.frames_dropped,
+            "reconnects": self.reconnect_count,
+            "fps": self.current_fps,
+            "width": self.video_width,
+            "height": self.video_height,
+        }
 
     def stop(self) -> None:
         """Stop the video receiver and clean up."""

@@ -24,14 +24,14 @@ RTSP_PORT = 7070
 running = True
 
 
-def heartbeat():
+def heartbeat(drone_ip: str):
     global running
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     s.bind(("", 0))
     beat = bytes([0x01, 0x01])
     while running:
         try:
-            s.sendto(beat, (DRONE_IP, CTRL_PORT))
+            s.sendto(beat, (drone_ip, CTRL_PORT))
         except OSError:
             pass
         time.sleep(1)
@@ -55,7 +55,7 @@ def main():
     print(f"  Press 'c' to capture, 'q' to quit")
     print()
 
-    threading.Thread(target=heartbeat, daemon=True).start()
+    threading.Thread(target=heartbeat, args=(args.ip,), daemon=True).start()
     time.sleep(0.5)
 
     rtsp_url = f"rtsp://{args.ip}:{RTSP_PORT}/webcam"

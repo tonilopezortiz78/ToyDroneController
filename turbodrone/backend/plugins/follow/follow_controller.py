@@ -16,6 +16,9 @@ class FollowController:
         invert_pitch: bool = False,
         yaw_speed: float = 20.0,
         pitch_speed: float = 20.0,
+        vert_deadzone: float = 0.10,
+        vert_speed: float = 10.0,
+        invert_vert: bool = False,
     ):
         self.yaw_deadzone = yaw_deadzone
         self.pitch_deadzone = pitch_deadzone
@@ -25,17 +28,21 @@ class FollowController:
         self.invert_pitch = invert_pitch
         self.yaw_speed = min(100.0, max(0.0, yaw_speed))
         self.pitch_speed = min(100.0, max(0.0, pitch_speed))
+        self.vert_deadzone = vert_deadzone
+        self.vert_speed = min(100.0, max(0.0, vert_speed))
+        self.invert_vert = invert_vert
 
-    def compute(self, box_center_x: float, box_width: float) -> tuple[float, float]:
+    def compute(self, box_center_x: float, box_center_y: float, box_width: float) -> tuple[float, float, float]:
         """
-        Compute yaw and pitch commands.
+        Compute yaw, pitch, and throttle commands.
         
         Args:
             box_center_x: Normalized x position of box center (0.0 = left, 1.0 = right)
+            box_center_y: Normalized y position of box center (0.0 = top, 1.0 = bottom)
             box_width: Normalized width of box (0.0 to 1.0)
         
         Returns:
-            (yaw, pitch) commands in range -100 to 100
+            (yaw, pitch, throttle) commands in range -100 to 100
         """
         # Yaw: rotate to center the target horizontally
         yaw = 0.0
@@ -54,4 +61,12 @@ class FollowController:
         if self.invert_pitch:
             pitch = -pitch
 
-        return yaw, pitch
+        # Throttle: adjust altitude to keep the target vertically centered
+        throttle = 0.0
+        error_y = box_center_y - 0.5
+        if abs(error_y) > self.vert_deadzone:
+            throttle = self.vert_speed if error_y < 0 else -self.vert_speed
+            if self.invert_vert:
+                throttle = -throttle
+
+        return yaw, pitch, throttle

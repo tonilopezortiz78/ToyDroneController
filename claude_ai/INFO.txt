@@ -1,0 +1,108 @@
+============================================================
+ RC UFO DRONE - QUICK INFO  (plain text cheat sheet)
+ Discovered live 2026-06-25 by Claude AI
+============================================================
+
+APP / PROTOCOL
+  Phone app .......... RC UFO  (com.cooingdv.rcufo)
+  Protocol family .... cooingdv  (Jieli / BL60x chipset)
+  Variant ............ TC / short-packet  (model id 83)
+
+NETWORK
+  Drone WiFi SSID .... WIFI-UFO-600849   (OPEN, no password)
+  Drone IP ........... 192.168.1.1
+  Drone MAC .......... c2:a9:a5:49:08:60
+  >>> YOUR IP MUST BE  192.168.1.100   <<<   (drone ignores you otherwise)
+      DHCP gives .101. PIN .100 so it survives reconnects:
+        sudo nmcli connection modify "WIFI-UFO-600849" +ipv4.addresses 192.168.1.100/24
+
+INTERNET + DRONE AT THE SAME TIME
+  One WiFi card can't do both networks. Keep internet on a
+  SECOND interface (phone USB tether or a USB WiFi dongle),
+  leave the built-in WiFi card on the drone.
+
+VIDEO
+  URL ................ rtsp://192.168.1.1:7070/webcam
+  Transport .......... RTSP + RTP over UDP  (TCP is rejected: 461)
+  Codec / size ....... MJPEG, 240x320, ~13 fps
+  Grab one frame:
+    ffmpeg -rtsp_transport udp -i rtsp://192.168.1.1:7070/webcam \
+           -frames:v 1 -update 1 out.jpg
+
+CONTROL / TELEMETRY
+  UDP port ........... 7099   (20 Hz loop)
+  Drone telemetry .... 53 01 00 00 00   (byte0=83 = model id, TC variant)
+  Heartbeat (app) .... 01 01   every 1000 ms
+  Camera switch ...... 06 01 (front) / 06 02 (rear)
+  Photo/video sync ... 09 01 / 09 02
+  Leave control ...... 08 01
+
+  TC FLIGHT PACKET (9 bytes), sticks centered at 128 (min 1, max 255):
+    03 66 B1 B2 ACC TURN FLAGS CKSUM 99
+      B1=roll B2=pitch ACC=throttle TURN=yaw
+      CKSUM = B1^B2^ACC^TURN^FLAGS
+    FLAGS bits: 01 up/takeoff  02 down/land  04 e-stop  08 flip
+                10 headless    20 return/unlock         80 gyro-calib
+  WARNING: these spin the motors. Fly only in a safe open area.
+
+MEDIA ON SD CARD (from app reversing, probe while on .100)
+  http://192.168.1.1/PHOTO/   http://192.168.1.1/DCIM/
+  FTP: user ftp / pass ftp / root /0/
+
+*** CALIBRATE THE GYRO FIRST ***
+  Before EVERY session: drone flat & still on the ground, press the amber
+  "GYRO CALIBRATE" button (or key C). An uncalibrated gyro is the usual reason
+  a drone drifts/tips/flips -- not the controls.
+
+STARTUP (after switching the drone ON)
+  ./start.sh                  connect + open cockpit (video+telemetry+control)
+  -- or step by step --
+  python3 ufo.py scan         list UFO drone hotspots in range
+  python3 ufo.py connect      auto-pick strongest UFO drone + hold .100 (retries)
+  python3 ufo.py connect --ssid WIFI-UFO-XXXXXX   connect to a specific drone
+  python3 webapp.py           cockpit -> http://localhost:8088
+
+TOOLKIT (this folder)
+  python3 ufo.py net          pin + ensure .100, ping drone
+  python3 ufo.py live         video-only web viewer
+  python3 ufo.py snapshot     save a photo to captures/
+  python3 ufo.py record -t 20 record 20s of video
+  python3 ufo.py telemetry    decode UDP 7099
+
+RELIABILITY NOTES
+  - .100 is PINNED to the wifi profile (survives reconnect).
+  - Cockpit self-heals .100 if it drops.
+  - Drone AUTO-POWERS-OFF when idle/low battery -> power-cycle + reconnect.
+  - Physical remote: OK together with wifi video/telemetry; do NOT fly sticks
+    from both remote and laptop at the same time (they fight).
+
+COCKPIT KEYS (webapp.py — matches deepseek_pro)
+  W/S = pitch   A/D = roll   Up/Dn = throttle   Left/Right = yaw
+  SPACE = takeoff/land toggle   BACKSPACE = EMERGENCY STOP
+  C = CALIBRATE GYRO   H = headless   F = flip
+  Buttons add: GYRO CALIBRATE, ARM/DISARM, LIGHT (LED 0x40), CAM1/CAM2, SNAP,
+  REC, ROTATE, ZOOM.  Rate: 1 Slow / 2 Normal / 3 Fast (= remote 1/2/3 beeps).
+  Control model = deepseek_pro: continuous 20Hz stream, takeoff pulses throttle
+  150 then auto-hovers, full 0-255 authority, + keyup auto-center safety.
+
+CAMERAS
+  ONE big live feed, rotated 90 deg by default (mount is sideways). Switch which
+  camera feeds it with CAM1/CAM2 (06 01 / 06 02). ONE encoder -> only one camera
+  at a time; true side-by-side is impossible. Switching re-inits the encoder so
+  the stream briefly drops and the webapp auto-reconnects. (On some units CAM2
+  shows the same front feed -> effectively one usable camera.)
+
+ELECTRONICS (research)
+  Chip: Jieli BL60x-class WiFi-camera SoC  (NOT an ESP32).
+  Separate flight MCU holds the gyro/accelerometer (MPU6050-class) — its data
+  never crosses to the WiFi chip.  See reference/electronics.md.
+
+BATTERY / IMU TELEMETRY: NOT AVAILABLE over WiFi (confirmed by live probe:
+  UDP opcode sweep 0x00-0xFF + HTTP + FTP -> drone only sends 53 01 00 00 00
+  and 01 01 00 00 00). Cockpit shows battery as a flight-time ESTIMATE only.
+
+DEPENDENCIES: python3 (stdlib only) + ffmpeg. Fully self-contained.
+
+FULL DETAILS:  see START_HERE.md, README.md, FINDINGS.md
+  reference/electronics.md (chip + battery probe), reference/deepseek_audit.md
+============================================================
