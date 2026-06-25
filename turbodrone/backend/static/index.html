@@ -160,10 +160,11 @@
     <div class="telem-grid" id="telem"></div>
 
     <h2 style="cursor:pointer;" onclick="toggleHelp()">Keys <span id="help-toggle" style="float:right;color:#4af;font-size:10px;">▼</span></h2>
-    <div class="procedure" id="help-box" style="padding:8px 10px;font-size:11px;">
+    <div class="procedure" id="help-box" style="padding:8px 10px;font-size:11px;line-height:1.8;">
       <b>↑↓←→</b> Move · <b>W</b>↑<b>S</b>↓ Throttle · <b>A</b><b>D</b> Yaw<br>
-      <b>T</b> Takeoff · <b>L</b> Land · <b>Z</b> Arm · <b>X</b> Disarm<br>
-      <b>Backspace</b> Takeoff · <b style="color:#f44">Space</b> Stop
+      <b>T</b> Takeoff · <b>L</b> Land · <b>Z</b> Arm · <b>X</b> Stop<br>
+      <b>Backspace</b> Takeoff · <b style="color:#f44">Space</b> Emergency Stop<br>
+      <b>R</b> Record · <b>1</b> Slow · <b>2</b> Normal · <b>3</b> Fast
     </div>
     <h2>Log</h2>
     <div class="log" id="log">Ready<br></div>
@@ -232,6 +233,7 @@ document.addEventListener('keydown',e=>{
   if(e.key==='l'){sendCmd('land');return;}
   if(e.key==='z'){sendCmd('takeoff');return;}
   if(e.key==='x'){sendCmd('estop');return;}
+  if(e.key==='r'){e.preventDefault();toggleRec();return;}
   if(e.key in KBM){e.preventDefault();kbA[e.key]=true;axes[KBM[e.key][0]]=KBM[e.key][1];sendAxes();}
 });
 document.addEventListener('keyup',e=>{
