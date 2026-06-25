@@ -20,7 +20,7 @@ nmcli dev wifi connect WIFI-UFO-600849
 
 ```bash
 cd ~/software/drone/deepseek_pro
-./control_drone.sh
+./launch_dashboard.sh
 ```
 
 Open `http://localhost:8000` in your browser.
