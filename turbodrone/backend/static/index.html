@@ -24,6 +24,8 @@
   .btn-ld { background: #e62; color: #fff; }
   .btn-stop { background: #c22; color: #fff; }
   .btn-hl { background: #55a; color: #fff; }
+  .btn-rec { background: #c22; color: #fff; }
+  .btn-rec.on { background: #a00; box-shadow: 0 0 10px rgba(200,0,0,0.5); }
   .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
   .jarea { display: flex; gap: 12px; justify-content: center; }
   .jbox { text-align: center; }
@@ -130,6 +132,9 @@
       <button class="btn-ld" onclick="sendCmd('land')">Land</button>
       <button class="btn-stop" onclick="sendCmd('estop')">Stop</button>
       <button class="btn-hl" onclick="toggleHL()">Headless</button>
+    </div>
+    <div class="btn-group">
+      <button class="btn-rec" id="btn-rec" onclick="toggleRec()" style="grid-column:span 2;">⏺ Record</button>
     </div>
 
     <div class="jarea">
@@ -316,6 +321,27 @@ pollTelemetry = async function() {
   } catch(_) {}
 };
 setInterval(pollTelemetry,400);
+
+// Toggle recording
+let recording = false;
+async function toggleRec() {
+  const btn = document.getElementById('btn-rec');
+  try {
+    const r = await fetch('/record', {method:'POST'});
+    const d = await r.json();
+    if (d.status === 'recording') {
+      recording = true;
+      btn.textContent = '⏹ Stop Recording';
+      btn.className = 'btn-rec on';
+      log('Recording to ' + d.path);
+    } else {
+      recording = false;
+      btn.textContent = '⏺ Record';
+      btn.className = 'btn-rec';
+      log('Recording stopped');
+    }
+  } catch(e) { log('Record error'); }
+}
 
 // Toggle help section
 function toggleHelp() {
