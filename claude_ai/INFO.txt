@@ -76,14 +76,20 @@ RELIABILITY NOTES
   - Physical remote: OK together with wifi video/telemetry; do NOT fly sticks
     from both remote and laptop at the same time (they fight).
 
-COCKPIT KEYS (webapp.py — matches deepseek_pro)
-  W/S = pitch   A/D = roll   Up/Dn = throttle   Left/Right = yaw
-  SPACE = takeoff/land toggle   BACKSPACE = EMERGENCY STOP
-  C = CALIBRATE GYRO   H = headless   F = flip
+COCKPIT KEYS (webapp.py)
+  ARROWS = MOVE   Up/Dn = forward/back (pitch)   Left/Right = left/right (roll)
+  W/S = throttle up/down     A/D = turn left/right (yaw)
+  1/2/3 = speed slow/normal/fast (plays 1/2/3 beeps, like the remote)
+  SHIFT + ARROWS = TRIM (persistent offset to cancel drift; click readout=reset)
+  T = TAKEOFF   L = LAND   R = RECORD   SPACE = EMERGENCY STOP
+  C = CALIBRATE GYRO (plays a tone)   H = headless   F = flip
+  On-screen "Controls" card lists all keys; header "?" = How-it-works menu.
+  TX panel shows the exact 9-byte packet on the wire, decoded live.
   Buttons add: GYRO CALIBRATE, ARM/DISARM, LIGHT (LED 0x40), CAM1/CAM2, SNAP,
-  REC, ROTATE, ZOOM.  Rate: 1 Slow / 2 Normal / 3 Fast (= remote 1/2/3 beeps).
+  REC, ROTATE, ZOOM.
   Control model = deepseek_pro: continuous 20Hz stream, takeoff pulses throttle
-  150 then auto-hovers, full 0-255 authority, + keyup auto-center safety.
+  150 then auto-hovers, full 0-255 authority, + keyup auto-center + tab-close
+  deadman E-stop.  Server binds localhost only (--host 0.0.0.0 to expose).
 
 CAMERAS
   ONE big live feed, rotated 90 deg by default (mount is sideways). Switch which

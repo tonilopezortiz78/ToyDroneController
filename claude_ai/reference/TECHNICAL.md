@@ -54,7 +54,14 @@ by an exhaustive opcode sweep. That is why the UI shows none of those.
 
 ## 3. webapp.py — HTTP / SSE API
 
-Served on `http://localhost:8088` (override `--port`). All JSON is UTF-8.
+Served on `http://localhost:8088` (override `--port`). **Binds `127.0.0.1` only**
+by default — the drone's WiFi is open, so exposing the control API to the network
+would let anyone fly it; pass `--host 0.0.0.0` to opt in. All JSON is UTF-8.
+
+The page also has UI-only features (no extra endpoints): a header **"?" help
+menu** (How it works), an on-screen **Controls** card, and a **TX panel** that
+decodes `tx_packet` live. A **deadman** auto-E-stops if no cockpit/control has
+been seen for ~3 s while armed (closing the tab cuts motors).
 
 ### GET endpoints
 | Route | Returns | Purpose |
@@ -74,7 +81,16 @@ stream (used for screenshots / headless checks; no drone contact for video).
 { "roll": 128, "pitch": 128, "throttle": 128, "yaw": 128 }
 ```
 Values are clamped server-side. If no `/control` arrives for **0.5 s** the sticks
-**auto-center** (watchdog) — releasing a key stops the drone.
+**auto-center** (watchdog) — releasing a movement key stops the drone.
+
+**Key → axis mapping is client-side** (in the page JS), so it's easy to change:
+- Arrows = **move**: `↑↓` pitch (fwd/back), `←→` roll (left/right).
+- `W/S` = throttle, `A/D` = yaw. `1/2/3` = speed (how far one press deflects a
+  stick: 40 / 70 / 110 from centre 128) and plays 1/2/3 beeps.
+- **Trim:** `Shift`+arrows add a persistent per-axis offset (to cancel drift),
+  baked into the values sent on `/control`. The page keeps streaming even when
+  idle so the trim holds.
+- Each axis is `128 ± (offset + held·step)`, clamped 0–255.
 
 **`/command`** — discrete actions: `{ "name": "<cmd>", "value": <optional> }`.
 
@@ -106,6 +122,7 @@ Every `/command` returns the current `/state` JSON (plus a `toast` string).
   "link": { "wifi_dbm":-60, "wifi_quality":80, "ping_ms":3.0,
             "video_fps":13.0, "bitrate_kbps":900, "drops":0, "uptime_s":42 },
   "rec": false, "tx_rate": 20, "bound_100": true, "active_cam": "front",
+  "tx_packet": "03 66 80 80 00 80 00 80 99",   // exact bytes last sent (shown in the TX panel)
   "drone": { "ssid":"WIFI-UFO-600849", "is_ufo":true, "connecting":false, "result":"" }
 }
 ```

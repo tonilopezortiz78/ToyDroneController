@@ -880,7 +880,7 @@ const held=new Set();
 const AXIS={ArrowUp:['p',+1],ArrowDown:['p',-1],ArrowLeft:['r',-1],ArrowRight:['r',+1],
  KeyW:['t',+1],KeyS:['t',-1],KeyA:['y',-1],KeyD:['y',+1]};   // ↑ = forward (pitch flipped to match the airframe)
 const ONE={KeyH:'headless',KeyC:'calib',KeyF:'flip'};
-let airborne=false,activeCam='front',rot=90,zoomed=false,recording=false;  // 90° default (camera mounted sideways)
+let activeCam='front',rot=90,zoomed=false,recording=false;  // 90° default (camera mounted sideways)
 const NOIMG=location.search.includes('noimg');  // skip live stream (debug/screenshot)
 const $=i=>document.getElementById(i);
 function clamp(v){return v<LO?LO:v>HI?HI:v}

@@ -60,43 +60,57 @@ folder is fully self-contained.
 
 A clean **shadcn-style dark dashboard** (self-contained — no Node/build step, no
 runtime CDN, so it works even on the drone's internet-less network): a **big FPV
-view**, **real telemetry**, **keyboard/button flight control**, and a **drone
-scan + reconnect** picker. Keep the tab focused for keys to work.
+view**, **real telemetry**, **keyboard/button flight control**, a **live view of
+the exact bytes we send**, an in-app **"?" help menu**, and a **drone scan +
+reconnect** picker. Bound to **`localhost` only** by default (safe on the open
+drone WiFi). Keep the tab focused for keys to work.
 
 > ### ⚠️ CALIBRATE THE GYRO FIRST
 > The **#1 reason a drone flies badly (drift, tip, flip) is an uncalibrated
 > gyro** — not the controls. With the drone **flat and still on the ground**,
-> press the amber **◎ GYRO CALIBRATE** button (or **`C`**) before every session.
-> The controls here are byte-identical to the proven `deepseek_pro` build.
+> press the amber **◎ GYRO CALIBRATE** button (or **`C`**) before every session
+> (it plays a rising tone). The control *protocol* matches the proven
+> `deepseek_pro` build.
 
 **Camera:** one **big live feed**, **rotated 90° by default** (mount is sideways),
 with **CAM 1 · Front** / **CAM 2 · Bottom** to switch. The airframe has **one
 encoder**, so only one camera streams at a time (true side-by-side is impossible);
-switching re-inits the encoder and the view reconnects on its own.
+switching re-inits the encoder and the view reconnects on its own. (On some units
+CAM 2 shows the front feed too — effectively one usable camera.)
 
-**Keyboard map** (matches `deepseek_pro`):
+### Keyboard map
 
 | Key | Action | Key | Action |
 |---|---|---|---|
-| `W`/`S` | pitch fwd/back | `Space` | takeoff / land **toggle** |
-| `A`/`D` | roll left/right | **`Backspace`** | **EMERGENCY STOP** |
-| `↑`/`↓` | throttle up/down | `H` | headless · `C` calibrate · `F` flip |
-| `←`/`→` | yaw left/right | | |
+| `↑`/`↓` | **move** forward / back *(pitch)* | `T` | **take off** |
+| `←`/`→` | **move** left / right *(roll)* | `L` | **land** |
+| `W`/`S` | throttle **up / down** | `R` | record video |
+| `A`/`D` | **turn** left / right *(yaw)* | `C` | **gyro calibrate** |
+| `1`/`2`/`3` | speed slow/normal/fast *(1/2/3 beeps)* | `H`·`F` | headless · flip |
+| **`Shift`+arrows** | **trim** (cancel drift) | **`Space`** | **EMERGENCY STOP** |
+
+> The on-screen **Controls** card lists every key (simple terms + technical
+> names), and the **"?"** menu in the header explains video / controls / data /
+> network in plain language.
+
+**Trim:** `Shift`+arrows nudge a persistent center offset to level out drift —
+like the trim on an RC remote. Click the trim readout to reset.
 
 **Buttons:** **◎ GYRO CALIBRATE** · ARM · TAKEOFF · LAND · FLIP · HEADLESS ·
 **◎ LIGHT** · DISARM · ■ E-STOP. Camera bar: **▣ SNAP · ● REC · ⟳ ROTATE · ⤢ ZOOM**
-and **CAM 1 / CAM 2**. Rate profile **1 · Slow / 2 · Normal / 3 · Fast** (matches
-the remote's 1/2/3 beeps).
+and **CAM 1 / CAM 2**. Rate **1 · Slow / 2 · Normal / 3 · Fast** (matches the
+remote's 1/2/3 beeps).
 
 **Control model (matches `deepseek_pro`, which flies right):** continuous 20 Hz
-control stream · `Space` pulses throttle to 150 for takeoff then auto-hovers ·
-full 0–255 stick authority. **Plus a safety net:** motors **DISARMED** until
-ARM/Takeoff; **`Backspace`** = panic stop; if the browser stops sending input for
->0.5 s the sticks **auto-return to neutral**. Fly in a clear open space.
+control stream · `T`/Takeoff pulses throttle to 150 then auto-hovers · full 0–255
+stick authority. **Plus a safety net:** motors **DISARMED** until ARM/Takeoff;
+**`Space`** = panic stop; releasing a movement key **auto-centers** that stick
+within 0.5 s; and if the cockpit tab is closed while armed it **auto-E-stops**
+(deadman). Fly in a clear open space.
 
 **Only real data is shown** — no battery % or artificial horizon, because the
-airframe sends **no battery or IMU** over WiFi (confirmed by live probe). Faking
-them would be worse than omitting them.
+airframe sends **no battery or IMU** over WiFi (confirmed by live probe). The
+**TX panel** shows the exact 9-byte packet on the wire, decoded live.
 
 ### Drone scan / reconnect
 Each drone is its own WiFi hotspot (all at `192.168.1.1`), so you fly **one at a

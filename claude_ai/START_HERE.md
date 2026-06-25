@@ -57,48 +57,55 @@ Open the page, **click it once** so it has keyboard focus, then confirm:
 - [ ] Drone on a **flat, level** surface, **nose pointing away** from you, in a
       clear open space, props clear.
 - [ ] **Headless OFF** for your first flights (controls relative to the nose).
-- [ ] Press **◎ GYRO CALIBRATE** (or `C`) and wait ~1 s.
-- [ ] Set rate to **`1 · Slow`**. Finger resting on **Backspace** (E-STOP).
+- [ ] Press **◎ GYRO CALIBRATE** (or `C`) and wait ~1 s (you'll hear a tone).
+- [ ] Press **`1`** for the slow rate. Finger resting on **`Space`** (E-STOP).
 
 ---
 
 ## Step 5 — First hover (treat it as a test)
-1. Press **`Space`** (or **TAKEOFF**). It pulses throttle to lift, then holds
-   ~mid throttle — there is **no altitude hold**, so ease **`↓`** to stop the climb
-   and manage height yourself.
+1. Press **`T`** (or **TAKEOFF**). It pulses throttle to lift, then holds ~mid
+   throttle — there is **no altitude hold**, so ease **`S`** (throttle down) to
+   stop the climb and manage height yourself.
 2. **Watch 2–3 seconds.** A small drift is normal. Violent climb / flip / shoot-off
-   → hit **Backspace** immediately (and re-calibrate before retrying).
-3. **Tiny** control checks — tap, then release (it auto-centers):
-   - `↓` ease down, `↑` climb a little — throttle correct?
-   - `←` / `→` — yaw left, then right?
-   - `W` (nose-away should creep forward), `S`, `A`, `D` — directions correct?
-4. If any axis is reversed or wild, **land/E-stop** — the gyro likely needs
-   another calibration on level ground.
+   → hit **`Space`** (E-STOP) immediately (and re-calibrate before retrying).
+3. **Tiny** control checks — tap, then release (movement auto-centers):
+   - `W` climb a little, `S` ease down — throttle correct?
+   - `A` / `D` — turn (yaw) left, then right?
+   - `↑` (forward), `↓`, `←`, `→` — does it move the right way?
+4. If it **drifts** steadily one way, use **`Shift`+arrows** to trim it level. If
+   an axis is **reversed or wild**, land/E-stop and re-calibrate on level ground.
 
 ## Step 6 — Land & shut down
-- **`Space`** again (toggles to land) or the **Land** button for a controlled
-  descent. Then **Disarm**, `Ctrl-C` the cockpit, switch the drone off.
+- **`L`** (or the **Land** button) for a controlled descent. Then **Disarm**,
+  `Ctrl-C` the cockpit, switch the drone off. **`Space`** = E-STOP at any time.
 
 ---
 
-## Controls (match the `deepseek_pro` project)
+## Controls
 
 | Key | Action | Key | Action |
 |---|---|---|---|
-| `W`/`S` | pitch fwd/back | `↑`/`↓` | throttle up/down |
-| `A`/`D` | roll left/right | `←`/`→` | yaw left/right |
-| **`Space`** | **takeoff / land toggle** | **`Backspace`** | **EMERGENCY STOP** |
-| `C` | **gyro calibrate** | `H` | headless · `F` flip |
+| `↑`/`↓` | move forward / back *(pitch)* | `T` | **take off** |
+| `←`/`→` | move left / right *(roll)* | `L` | **land** |
+| `W`/`S` | throttle up / down | `R` | record video |
+| `A`/`D` | turn left / right *(yaw)* | `C` | **gyro calibrate** |
+| `1`/`2`/`3` | speed slow/normal/fast | `H`·`F` | headless · flip |
+| **`Shift`+arrows** | **trim** (cancel drift) | **`Space`** | **EMERGENCY STOP** |
 
-**Rate profile** (top-right, matches the remote's beeps): **`1 · Slow`** /
-**`2 · Normal`** / **`3 · Fast`** — start Slow, work up as you trust the trim.
-Buttons mirror every key, plus **CAM 1/CAM 2**, **▣ Snap**, **● Rec**,
-**⟳ Rotate**, **⤢ Zoom**.
+The same keys are shown in the on-screen **Controls** card, and the header **"?"**
+opens a plain-language **How it works** menu (video / controls / data / network).
 
-**Safety built in:** motors are **DISARMED** until you Arm/Takeoff; releasing a
-key auto-centers that stick within 0.5 s; **Backspace** (or the red ■ E-STOP)
-cuts the motors instantly — the drone drops, so use it only to stop a misbehaving
-flight, but always prefer it to a flyaway.
+**Rate** (matches the remote's 1/2/3 beeps — you'll hear them): **`1 · Slow`** /
+**`2 · Normal`** / **`3 · Fast`**. Start Slow. Buttons mirror every key, plus
+**CAM 1/CAM 2**, **▣ Snap**, **● Rec**, **⟳ Rotate**, **⤢ Zoom**.
+
+**Trim:** if the drone drifts, **`Shift`+arrows** nudge a persistent offset to
+level it out (Shift+→ trims right, Shift+↑ trims forward, …). Click the trim
+readout to reset.
+
+**Safety built in:** motors **DISARMED** until you Arm/Takeoff; releasing a
+movement key auto-centers that stick within 0.5 s; **`Space`** (or the red
+■ E-STOP) cuts motors instantly; closing the tab while armed **auto-E-stops**.
 
 ---
 
