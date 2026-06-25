@@ -45,12 +45,12 @@ class CooingdvVideoProtocolAdapter(BaseVideoProtocolAdapter):
     RTSP_PATH: Final = "/webcam"
     
     # Reconnection settings
-    RECONNECT_DELAY: Final = 1.0  # seconds
-    MAX_RECONNECT_ATTEMPTS: Final = 5
+    RECONNECT_DELAY: Final = 0.3  # seconds
+    MAX_RECONNECT_ATTEMPTS: Final = 100
     
     # Frame capture settings
-    FRAME_TIMEOUT: Final = 5.0  # seconds without frame triggers reconnect
-    READ_FAILURE_BACKOFF: Final = 0.05  # seconds between failed reads
+    FRAME_TIMEOUT: Final = 2.0  # seconds without frame triggers reconnect
+    READ_FAILURE_BACKOFF: Final = 0.01  # seconds between failed reads
 
     def __init__(
         self,
