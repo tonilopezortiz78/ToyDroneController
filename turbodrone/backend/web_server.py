@@ -566,8 +566,10 @@ async def toggle_record():
             _recording_proc = subprocess.Popen([
                 "ffmpeg", "-y",
                 "-i", "rtsp://192.168.1.1:7070/webcam",
-                "-vcodec", "libx264", "-preset", "ultrafast",
-                "-vf", "transpose=1",
+                "-vcodec", "libx264", "-preset", "medium",
+                "-crf", "18", "-b:v", "5M",
+                "-vf", "transpose=1,scale=640:480",
+                "-movflags", "+faststart",
                 path
             ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             return {"status": "recording", "path": path}
