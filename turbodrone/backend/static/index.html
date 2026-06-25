@@ -88,23 +88,48 @@
   <div class="video-panel">
     <img id="video" src="/mjpeg">
     <div class="fps"><span id="fps">0</span> fps</div>
-    <div class="drone3d-wrap">
-      <div class="drone3d-scene">
-        <div class="drone3d" id="drone3d">
-          <div class="drone3d-glow"></div>
-          <div class="drone3d-ring"></div>
-          <div class="drone3d-ring2"></div>
-          <div class="drone3d-prop tl"></div>
-          <div class="drone3d-prop tr"></div>
-          <div class="drone3d-prop bl"></div>
-          <div class="drone3d-prop br"></div>
-          <div class="drone3d-arm tl"></div>
-          <div class="drone3d-arm tr"></div>
-          <div class="drone3d-arm bl"></div>
-          <div class="drone3d-arm br"></div>
-          <div class="drone3d-body"></div>
+    <div class="drone3d-wrap" style="width:130px;height:210px;">
+      <div style="height:16px;font-size:9px;color:#4af;text-align:center;padding:2px 0;border-bottom:1px solid rgba(60,140,255,0.1);">
+        <span id="d3d-angles">P:0° R:0° Y:0°</span>
+      </div>
+      <div style="height:95px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid rgba(60,140,255,0.1);">
+        <div class="drone3d-scene" style="height:90px;">
+          <div class="drone3d" id="drone3d" style="transform-origin:center center;">
+            <div class="drone3d-glow"></div>
+            <div class="drone3d-ring"></div>
+            <div class="drone3d-ring2"></div>
+            <div class="drone3d-prop tl"></div>
+            <div class="drone3d-prop tr"></div>
+            <div class="drone3d-prop bl"></div>
+            <div class="drone3d-prop br"></div>
+            <div class="drone3d-arm tl"></div>
+            <div class="drone3d-arm tr"></div>
+            <div class="drone3d-arm bl"></div>
+            <div class="drone3d-arm br"></div>
+            <div class="drone3d-body"></div>
+          </div>
         </div>
       </div>
+      <div style="font-size:8px;color:#888;text-align:center;padding:1px 0;">side</div>
+      <div style="height:85px;display:flex;align-items:center;justify-content:center;">
+        <div class="drone3d-scene" style="height:80px;">
+          <div class="drone3d" id="drone3d-side" style="transform-origin:center center;">
+            <div class="drone3d-glow"></div>
+            <div class="drone3d-ring"></div>
+            <div class="drone3d-ring2"></div>
+            <div class="drone3d-prop tl"></div>
+            <div class="drone3d-prop tr"></div>
+            <div class="drone3d-prop bl"></div>
+            <div class="drone3d-prop br"></div>
+            <div class="drone3d-arm tl"></div>
+            <div class="drone3d-arm tr"></div>
+            <div class="drone3d-arm bl"></div>
+            <div class="drone3d-arm br"></div>
+            <div class="drone3d-body"></div>
+          </div>
+        </div>
+      </div>
+      <div style="font-size:8px;color:#888;text-align:center;padding:1px 0;">back</div>
     </div>
   </div>
   <div class="sidebar">
@@ -220,6 +245,8 @@ document.addEventListener('keydown',e=>{
   if(e.repeat)return;
   if(e.key===' '){e.preventDefault();sendCmd('estop');return;}
   if(e.key==='Backspace'){sendCmd('takeoff');return;}
+  if(e.key==='t'||e.key==='T'){sendCmd('takeoff');return;}
+  if(e.key==='l'||e.key==='L'){sendCmd('land');return;}
   if(e.key in KBM){e.preventDefault();kbA[e.key]=true;axes[KBM[e.key][0]]=KBM[e.key][1];sendAxes();}
 });
 document.addEventListener('keyup',e=>{
@@ -271,14 +298,18 @@ let fc=0;
 setInterval(()=>{document.getElementById('fps').textContent=fc;fc=0;},1000);
 document.getElementById('video').addEventListener('load',()=>fc++);
 
-// 3D drone animation
+// 3D drone animation (top + side views)
 const droneEl = document.getElementById('drone3d');
+const droneSide = document.getElementById('drone3d-side');
+const d3dAngles = document.getElementById('d3d-angles');
 let dPitch=0, dRoll=0, dYaw=0;
 function update3DDrone() {
   const p = dPitch * 0.5;
   const r = dRoll * 0.5;
   const y = dYaw * 0.3;
   droneEl.style.transform = `rotateX(${p}deg) rotateZ(${r}deg) rotateY(${y}deg)`;
+  droneSide.style.transform = `rotateX(${90+p*0.3}deg) rotateZ(${r*0.3}deg)`;
+  d3dAngles.textContent = `P:${dPitch.toFixed(1)}° R:${dRoll.toFixed(1)}° Y:${dYaw.toFixed(1)}°`;
 }
 // Override telemetry polling to capture pitch/roll/yaw
 const origPoll = pollTelemetry;
