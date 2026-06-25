@@ -27,15 +27,7 @@
   .btn-rec { background: #c22; color: #fff; }
   .btn-rec.on { background: #a00; box-shadow: 0 0 10px rgba(200,0,0,0.5); }
   .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
-  .jarea { display: flex; gap: 12px; justify-content: center; }
-  .jbox { text-align: center; }
-  .jbox .lbl { font-size: 11px; color: #888; text-transform: uppercase; margin-bottom: 2px; }
-  .joy { width: 120px; height: 120px; background: radial-gradient(circle, #1a1a2e 60%, #0f0f1a); border-radius: 60px; position: relative; cursor: grab; border: 2px solid #2a2a4a; user-select: none; touch-action: none; margin: 4px auto; }
-  .joy:active { cursor: grabbing; }
-  .knob { width: 36px; height: 36px; background: radial-gradient(circle, #6af, #38c); border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); box-shadow: 0 0 10px rgba(60,140,255,0.4); pointer-events: none; }
-  .knob.t { background: radial-gradient(circle, #f84, #d52); box-shadow: 0 0 10px rgba(255,100,40,0.4); }
-  .aread { font-size: 12px; font-family: monospace; color: #4af; display: flex; gap: 6px; justify-content: center; font-weight: 600; }
-  .aread span { min-width: 40px; }
+
   .telem-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 3px; }
   .telem-item { background: #0f0f1a; border-radius: 3px; padding: 4px 8px; display: flex; justify-content: space-between; font-size: 12px; }
   .telem-item .label { color: #888; }
@@ -143,18 +135,7 @@
       <button class="btn-hl" id="btn-speed" style="font-size:10px;background:#444;">Speed: 2</button>
     </div>
 
-    <div class="jarea">
-      <div class="jbox">
-        <div class="lbl">Throttle / Yaw</div>
-        <div class="joy" id="jleft"><div class="knob t" id="kl"></div></div>
-        <div class="aread"><span id="vt">T:0</span><span id="vy">Y:0</span></div>
-      </div>
-      <div class="jbox">
-        <div class="lbl">Pitch / Roll</div>
-        <div class="joy" id="jright"><div class="knob" id="kr"></div></div>
-        <div class="aread"><span id="vp">P:0</span><span id="vr">R:0</span></div>
-      </div>
-    </div>
+
 
     <h2>Telemetry</h2>
     <div class="telem-grid" id="telem"></div>
@@ -194,33 +175,7 @@ function toggleHL() { axes.headless=!axes.headless; sendCmd('headless'); }
 function sendAxes() {
   if(!wsOK) return;
   ws.send(JSON.stringify({type:'axes',mode:'abs',throttle:axes.throttle,yaw:axes.yaw,pitch:axes.pitch,roll:axes.roll}));
-  document.getElementById('vt').textContent='T:'+(axes.throttle*100|0);
-  document.getElementById('vy').textContent='Y:'+(axes.yaw*100|0);
-  document.getElementById('vp').textContent='P:'+(axes.pitch*100|0);
-  document.getElementById('vr').textContent='R:'+(axes.roll*100|0);
 }
-
-// Joystick
-function jsetup(eid,kid,axX,axY,inv) {
-  const el=document.getElementById(eid), kb=document.getElementById(kid);
-  const R=el.offsetWidth/2-16; let act=false;
-  function mv(x,y) {
-    const cx=el.offsetWidth/2, cy=el.offsetHeight/2;
-    let dx=x-cx, dy=y-cy, d=Math.sqrt(dx*dx+dy*dy);
-    if(d>R){dx=dx/d*R;dy=dy/d*R;}
-    kb.style.left=(cx+dx-16)+'px'; kb.style.top=(cy+dy-16)+'px';
-    const nx=dx/R, ny=dy/R;
-    axes[axX]=Math.round(nx*100)/100; axes[axY]=Math.round((inv?-ny:ny)*100)/100;
-    sendAxes();
-  }
-  function st(e) { act=true; const p=e.type.startsWith('t')?e.touches[0]:e; const r=el.getBoundingClientRect(); mv(p.clientX-r.left,p.clientY-r.top); }
-  function mv2(e) { if(!act)return; e.preventDefault(); const p=e.type.startsWith('t')?e.touches[0]:e; const r=el.getBoundingClientRect(); mv(p.clientX-r.left,p.clientY-r.top); }
-  function en() { if(!act)return; act=false; kb.style.left=(el.offsetWidth/2-16)+'px'; kb.style.top=(el.offsetHeight/2-16)+'px'; axes[axX]=0; axes[axY]=0; sendAxes(); }
-  el.addEventListener('mousedown',st); document.addEventListener('mousemove',mv2); document.addEventListener('mouseup',en);
-  el.addEventListener('touchstart',st,{passive:true}); document.addEventListener('touchmove',mv2,{passive:false}); document.addEventListener('touchend',en);
-}
-jsetup('jleft','kl','yaw','throttle',true);
-jsetup('jright','kr','roll','pitch',true);
 
 // Keyboard
 const KBM={'w':['throttle',1],'s':['throttle',-1],'a':['yaw',-1],'d':['yaw',1],'ArrowUp':['pitch',1],'ArrowDown':['pitch',-1],'ArrowLeft':['roll',-1],'ArrowRight':['roll',1]};
