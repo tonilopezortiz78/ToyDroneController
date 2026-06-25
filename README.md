@@ -1,116 +1,109 @@
-# RC UFO Drone — Protocol Analysis & Tools
+# ToyDroneController
 
-Complete reverse-engineering report for **cooingdv**-family WiFi quadcopters
-(RC UFO, KY UFO, etc.).
+Reverse-engineered control interface for **cooingdv**-family WiFi toy quadcopters
+(RC UFO, KY UFO, and OEM variants). Replace the closed-source mobile app with
+your own desktop control — keyboard, joystick, or web dashboard.
+
+## Features
+
+- **Live FPV video** — RTSP MJPEG stream with 90° rotation
+- **Real-time telemetry** — pitch, roll, throttle, yaw, WiFi signal, protocol state
+- **Keyboard control** — WASD + arrows, Space/Backspace for takeoff/stop
+- **Virtual joysticks** — drag-to-fly on the web dashboard
+- **Web dashboard** — combined video, telemetry, and controls
+- **3D drone visualization** — real-time attitude indicator
+- **CLI tools** — standalone viewer, capture, and protocol probe
 
 ## Quick Start
 
 ```bash
-# 1. One-command full startup (connect + web + controls)
-./drone.sh all
+# Connect to drone WiFi
+nmcli dev wifi connect WIFI-UFO-XXXXXX
 
-# 2. Or step by step:
-./drone.sh connect     # Connect to drone WiFi
-./drone.sh view        # View camera stream
-./drone.sh control     # Keyboard control + live video
-./drone.sh web         # TurboDrone web dashboard
+# Start the web dashboard
+cd turbodrone/backend
+DRONE_TYPE=cooingdv DRONE_IP=192.168.1.1 uvicorn web_server:app --host 0.0.0.0 --port 8000
 
-# 3. Check connection
-./drone.sh status
+# Open http://localhost:8000
 ```
 
-## Dual-Network Setup
-
-The drone creates its own WiFi network. To keep **internet access**
-while controlling the drone, use two interfaces:
+## Architecture
 
 ```
-┌─────────────────┐     USB Tether     ┌──────────────┐     Internet
-│  Phone (USB)    │◄──────────────────►│   Laptop      │◄────────────►
-│  10.148.252.x   │     metric 100     │   wlp5s0     │
-└─────────────────┘                    │   192.168.1.x │
-                                       │   enx...     │
-                                       │   10.148.x    │
-                                       └──────┬───────┘
-                                              │ WiFi Direct
-                                              ▼
-                                       ┌──────────────┐
-                                       │    Drone      │
-                                       │  192.168.1.1  │
-                                       └──────────────┘
+┌─────────────────┐         WiFi 2.4 GHz        ┌─────────────────┐
+│     Drone       │◄───────────────────────────►│  ToyDroneCtrl   │
+│  192.168.1.1    │   UDP :7099 (control)       │  Web dashboard  │
+│  MAC: C2:A9:A5  │   RTSP :7070 (video)        │  CLI tools      │
+└─────────────────┘                              └─────────────────┘
 ```
 
-**Routing logic:**
-- Internet traffic → USB tether `enx...` (default route, metric 100)
-- Drone traffic → WiFi `wlp5s0` (direct subnet `192.168.1.0/24`)
-- The kernel automatically picks the right interface per destination
+### Protocol
+
+| Layer | Detail |
+|-------|--------|
+| Control | UDP port 7099, heartbeat `[0x01, 0x01]` every 1s |
+| Packets | 9-byte TC (short) or 21-byte GL (extended) |
+| Checksum | XOR of axis bytes |
+| Video | RTSP `rtsp://192.168.1.1:7070/webcam` |
+| Codec | MJPEG 240×320 @ ~18 fps |
+| Telemetry | 5-byte status on same UDP socket |
+| Chipset | Jieli WiFi module (cooingdv firmware) |
+
+## Project Structure
+
+```
+ToyDroneController/
+├── drone.sh              # CLI launcher (connect, view, control, web)
+├── view.py               # Standalone RTSP stream viewer
+├── control.py            # Keyboard-only drone control
+├── capture.py            # Photo/video capture tool
+├── docs/
+│   ├── CONTROL_PROTOCOL.md       # UDP control protocol spec
+│   ├── VIDEO_STREAM.md           # RTSP video stream spec
+│   └── REVERSE_ENGINEERING.md    # How the protocol was RE'd
+├── tools/
+│   ├── scan.py           # Network discovery for drones
+│   └── probe.py          # Protocol fuzzer
+├── turbodrone/           # Web dashboard backend
+│   └── backend/
+│       ├── web_server.py         # FastAPI server
+│       ├── protocols/            # Protocol adapters (cooingdv, s2x, etc.)
+│       ├── models/               # RC models
+│       ├── services/             # Flight controller, video receiver
+│       └── static/index.html     # Dashboard frontend
+└── docs/                 # Protocol documentation
+```
 
 ## Documentation
 
-| Doc | Description |
-|-----|-------------|
-| [docs/REVERSE_ENGINEERING.md](docs/REVERSE_ENGINEERING.md) | How the protocol was reverse-engineered |
-| [docs/CONTROL_PROTOCOL.md](docs/CONTROL_PROTOCOL.md) | Full UDP control protocol specification |
-| [docs/VIDEO_STREAM.md](docs/VIDEO_STREAM.md) | RTSP video stream details |
+| Document | Description |
+|----------|-------------|
+| [docs/CONTROL_PROTOCOL.md](docs/CONTROL_PROTOCOL.md) | Full UDP control packet specification |
+| [docs/VIDEO_STREAM.md](docs/VIDEO_STREAM.md) | RTSP stream details and telemetry OSD |
+| [docs/REVERSE_ENGINEERING.md](docs/REVERSE_ENGINEERING.md) | Methodology for RE these drones |
 
-## Tools
+## Requirements
 
-| Tool | Description |
-|------|-------------|
-| `drone.sh` | **Main launcher** — connect, view, control, web app |
-| `view.py` | RTSP stream viewer |
-| `control.py` | Keyboard control + live video + HUD |
-| `capture.py` | Photo/video capture |
-| `tools/scan.py` | Network scanner for drone discovery |
-| `tools/probe.py` | Protocol fuzzer |
-
-## Protocol Reference
-
-```
-Control:  UDP 192.168.1.1:7099
-           Heartbeat: [0x01, 0x01] every 1s
-           TC packet: 03 66 RR PP TT YY FF CS 99
-           GL packet: 03 66 14 RR PP TT YY F1 F2 [9x 00] CS 99
-
-Video:    RTSP rtsp://192.168.1.1:7070/webcam
-           MJPEG 240×320 @ ~18 fps
-
-Telemetry: Drone → Client on same UDP socket
-           53 01 00 00 00 (5 bytes)
-```
-
-## Startup Script
-
-`drone.sh` handles the entire workflow:
+- Linux with `nmcli`, `iwconfig`, Python 3.10+
+- WiFi adapter capable of connecting to drone's 2.4 GHz AP
+- Python packages: `opencv-python`, `fastapi`, `uvicorn`
 
 ```bash
-./drone.sh connect         # Auto-detect & connect to drone WiFi
-./drone.sh status          # Show connection/routing state
-./drone.sh view            # Open camera viewer
-./drone.sh control         # Keyboard control (WASD + arrows)
-./drone.sh web             # TurboDrone web dashboard
-./drone.sh all             # Everything at once
+pip install opencv-python fastapi uvicorn
 ```
 
-## Troubleshooting
+## Drone Compatibility
 
-**Drone not reachable:**
-```bash
-./drone.sh status              # Check connection state
-iwconfig wlp5s0                # Check WiFi signal
-signal level should be > -70 dBm
-```
+| App | Package | Status |
+|-----|---------|--------|
+| RC UFO | `com.cooingdv.rcufo` | Tested |
+| KY UFO | `com.cooingdv.kyufo` | Supported |
+| RC FPV | `com.cooingdv.rcfpv` | Supported |
 
-**Web app no video:**
-The RTSP stream drops packets below -70 dBm. Move closer to the drone
-or use `python3 control.py` which has more robust frame handling.
+## License
 
-**Lost drone WiFi:**
-```bash
-./drone.sh connect             # Reconnect automatically
-```
+MIT
 
-## References
+## Acknowledgments
 
-- [TurboDrone](https://github.com/marshallrichards/turbodrone)
-- [RC UFO Play Store](https://play.google.com/store/apps/details?id=com.cooingdv.rcufo)
+- [TurboDrone](https://github.com/marshallrichards/turbodrone) — Marshall Richards' RE framework

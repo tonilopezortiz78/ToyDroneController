@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RC UFO Drone Dashboard</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', sans-serif; background: #0a0a0f; color: #e0e0e0; height: 100vh; overflow: hidden; font-size: 16px; }
+  .container { display: flex; height: 100vh; }
+  .video-panel { flex: 4; display: flex; align-items: center; justify-content: center; background: #000; position: relative; overflow: hidden; }
+  #video { width: 720px; height: 960px; object-fit: contain; image-rendering: auto; }
+  .sidebar { width: 480px; background: #14141f; padding: 16px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
+  h2 { color: #fff; font-size: 18px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 2px solid #2a2a3a; padding-bottom: 6px; margin-top: 4px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; }
+  .badge { padding: 6px 14px; border-radius: 6px; font-size: 15px; font-weight: 600; white-space: nowrap; }
+  .badge.on { background: #1a6; color: #fff; }
+  .badge.off { background: #444; color: #aaa; }
+  .badge.info { background: #19a; color: #fff; }
+  .badge.warn { background: #e62; color: #fff; }
+  button { padding: 12px 0; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.1s; }
+  button:hover { filter: brightness(1.2); }
+  .btn-to { background: #2a7; color: #fff; font-size: 18px; }
+  .btn-ld { background: #e62; color: #fff; font-size: 18px; }
+  .btn-stop { background: #c22; color: #fff; font-size: 18px; }
+  .btn-hl { background: #55a; color: #fff; font-size: 18px; }
+  .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .jarea { display: flex; gap: 12px; justify-content: center; }
+  .jbox { text-align: center; }
+  .jbox .lbl { font-size: 14px; color: #888; text-transform: uppercase; margin-bottom: 4px; }
+  .joy { width: 140px; height: 140px; background: radial-gradient(circle, #1a1a2e 60%, #0f0f1a); border-radius: 70px; position: relative; cursor: grab; border: 3px solid #2a2a4a; user-select: none; touch-action: none; margin: 4px auto; }
+  .joy:active { cursor: grabbing; }
+  .knob { width: 44px; height: 44px; background: radial-gradient(circle, #6af, #38c); border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); box-shadow: 0 0 14px rgba(60,140,255,0.5); pointer-events: none; }
+  .knob.t { background: radial-gradient(circle, #f84, #d52); box-shadow: 0 0 14px rgba(255,100,40,0.5); }
+  .aread { font-size: 15px; font-family: monospace; color: #4af; display: flex; gap: 8px; justify-content: center; font-weight: 600; }
+  .aread span { min-width: 50px; }
+  .telem-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  .telem-item { background: #0f0f1a; border-radius: 5px; padding: 6px 10px; display: flex; justify-content: space-between; font-size: 14px; }
+  .telem-item .label { color: #888; }
+  .telem-item .value { color: #4af; font-family: monospace; font-weight: 600; }
+  .telem-item .value.green { color: #4a4; }
+  .telem-item .value.red { color: #c44; }
+  .procedure { background: #0a0a18; border-radius: 6px; padding: 10px 12px; font-size: 14px; line-height: 1.7; color: #ccc; border-left: 3px solid #4af; }
+  .procedure b { color: #fff; }
+  .procedure .key { display:inline-block; background:#2a2a4a; color:#4af; padding:1px 8px; border-radius:4px; font-family:monospace; font-size:13px; font-weight:700; }
+  .procedure .danger { color: #f44; font-weight: 700; }
+  .log { background: #0a0a12; border-radius: 5px; padding: 6px 10px; font-family: monospace; font-size: 13px; height: 70px; overflow-y: auto; color: #6a6; }
+  .fps { position: absolute; bottom: 14px; left: 14px; font-size: 15px; color: #888; background: rgba(0,0,0,0.7); padding: 4px 12px; border-radius: 6px; }
+  /* ── 3D Drone ───────────────────────────────────── */
+  .drone3d-wrap { position: absolute; top: 14px; right: 14px; width: 160px; height: 160px; perspective: 600px; background: rgba(0,0,0,0.65); border-radius: 12px; border: 1px solid #4af33; backdrop-filter: blur(4px); }
+  .drone3d-scene { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; transform-style: preserve-3d; }
+  .drone3d { width: 80px; height: 80px; position: relative; transform-style: preserve-3d; transition: transform 0.1s ease-out; }
+  .drone3d-arm { position: absolute; width: 12px; height: 60px; background: linear-gradient(180deg,#4af,#0a2a5a); border-radius: 4px; box-shadow: 0 0 8px rgba(60,140,255,0.3); }
+  .drone3d-arm.tl { top: -30px; left: 4px; transform-origin: bottom center; transform: rotate(-30deg); }
+  .drone3d-arm.tr { top: -30px; right: 4px; transform-origin: bottom center; transform: rotate(30deg); }
+  .drone3d-arm.bl { bottom: -30px; left: 4px; transform-origin: top center; transform: rotate(30deg); }
+  .drone3d-arm.br { bottom: -30px; right: 4px; transform-origin: top center; transform: rotate(-30deg); }
+  .drone3d-body { width: 36px; height: 36px; background: radial-gradient(circle at 35% 35%, #4af, #0a2a5a); border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); box-shadow: 0 0 20px rgba(60,140,255,0.5), inset 0 0 10px rgba(0,0,0,0.5); border: 2px solid #4af; }
+  .drone3d-prop { position: absolute; width: 20px; height: 6px; background: rgba(60,140,255,0.3); border-radius: 3px; box-shadow: 0 0 6px rgba(60,140,255,0.2); }
+  .drone3d-prop.tl { top: -34px; left: -4px; }
+  .drone3d-prop.tr { top: -34px; right: -4px; }
+  .drone3d-prop.bl { bottom: -34px; left: -4px; }
+  .drone3d-prop.br { bottom: -34px; right: -4px; }
+  .drone3d-ring { position: absolute; width: 90px; height: 90px; border: 1px solid rgba(60,140,255,0.15); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%,-50%); }
+  .drone3d-ring2 { position: absolute; width: 110px; height: 110px; border: 1px dashed rgba(60,140,255,0.08); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%,-50%); }
+  .drone3d-glow { position: absolute; width: 80px; height: 80px; background: radial-gradient(circle, rgba(60,140,255,0.1) 0%, transparent 70%); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%,-50%); }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="video-panel">
+    <img id="video" src="/mjpeg">
+    <div class="fps"><span id="fps">0</span> fps</div>
+    <div class="drone3d-wrap">
+      <div class="drone3d-scene">
+        <div class="drone3d" id="drone3d">
+          <div class="drone3d-glow"></div>
+          <div class="drone3d-ring"></div>
+          <div class="drone3d-ring2"></div>
+          <div class="drone3d-prop tl"></div>
+          <div class="drone3d-prop tr"></div>
+          <div class="drone3d-prop bl"></div>
+          <div class="drone3d-prop br"></div>
+          <div class="drone3d-arm tl"></div>
+          <div class="drone3d-arm tr"></div>
+          <div class="drone3d-arm bl"></div>
+          <div class="drone3d-arm br"></div>
+          <div class="drone3d-body"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="sidebar">
+    <div class="row">
+      <span id="bc-conn" class="badge off">Disconnected</span>
+      <span id="bc-type" class="badge info">RC UFO</span>
+      <span id="bc-var" class="badge info">-</span>
+      <span id="bc-sig" class="badge warn">--dBm</span>
+    </div>
+
+    <div class="btn-group">
+      <button class="btn-to" onclick="sendCmd('takeoff')">Takeoff</button>
+      <button class="btn-ld" onclick="sendCmd('land')">Land</button>
+      <button class="btn-stop" onclick="sendCmd('estop')">Stop</button>
+      <button class="btn-hl" onclick="toggleHL()">Headless</button>
+    </div>
+
+    <div class="jarea">
+      <div class="jbox">
+        <div class="lbl">Throttle / Yaw</div>
+        <div class="joy" id="jleft"><div class="knob t" id="kl"></div></div>
+        <div class="aread"><span id="vt">T:0</span><span id="vy">Y:0</span></div>
+      </div>
+      <div class="jbox">
+        <div class="lbl">Pitch / Roll</div>
+        <div class="joy" id="jright"><div class="knob" id="kr"></div></div>
+        <div class="aread"><span id="vp">P:0</span><span id="vr">R:0</span></div>
+      </div>
+    </div>
+
+    <h2>Battery <span style="color:#888;font-size:14px;font-weight:400;text-transform:none;">(in video OSD)</span></h2>
+    <div class="telem-item"><span class="label">Voltage</span><span class="value">Shown on video feed</span></div>
+    <div class="telem-item"><span class="label">Warning</span><span class="value red">Land when blinking</span></div>
+
+    <h2>Telemetry</h2>
+    <div class="telem-grid" id="telem"></div>
+
+    <h2>How To Fly</h2>
+    <div class="procedure">
+      <b>1. Takeoff</b><br>
+      Press <span class="key">Space</span> or click <b style="color:#2a7">Takeoff</b>.<br>
+      Drone rises to ~1.5m and hovers.<br><br>
+
+      <b>2. Fly</b><br>
+      <span class="key">W</span><span class="key">S</span> → Pitch (forward/back)<br>
+      <span class="key">A</span><span class="key">D</span> → Roll (left/right)<br>
+      <span class="key">↑</span><span class="key">↓</span> → Throttle (altitude)<br>
+      <span class="key">←</span><span class="key">→</span> → Yaw (rotate)<br>
+      Hold key = full deflection | Release = center<br><br>
+
+      <b>3. Land</b><br>
+      Press <b style="color:#e62">Land</b> button → gradual descent.<br><br>
+
+      <b class="danger">⚠ EMERGENCY</b><br>
+      Press <span class="key" style="background:#622;color:#f44">Backspace</span> or <b style="color:#c22">Stop</b> button.<br>
+      <span class="danger">Motors cut immediately — drone falls.</span>
+    </div>
+
+    <h2>Log</h2>
+    <div class="log" id="log">Ready<br></div>
+  </div>
+</div>
+
+<script>
+const WS_URL = `ws://${location.host}/ws`;
+let ws = null, wsOK = false;
+let axes = { throttle:0, yaw:0, pitch:0, roll:0 };
+
+function log(m) { const e=document.getElementById('log'); e.innerHTML+=m+'<br>'; e.scrollTop=e.scrollHeight; }
+
+function connectWS() {
+  ws = new WebSocket(WS_URL);
+  ws.onopen = () => { wsOK=true; document.getElementById('bc-conn').className='badge on'; document.getElementById('bc-conn').textContent='Connected'; log('Connected'); };
+  ws.onclose = () => { wsOK=false; document.getElementById('bc-conn').className='badge off'; document.getElementById('bc-conn').textContent='Disconnected'; setTimeout(connectWS,1000); };
+}
+function sendCmd(t) { if(!wsOK)return; ws.send(JSON.stringify({type:t})); log(t); }
+function toggleHL() { axes.headless=!axes.headless; sendCmd('headless'); }
+function sendAxes() {
+  if(!wsOK) return;
+  ws.send(JSON.stringify({type:'axes',mode:'abs',throttle:axes.throttle,yaw:axes.yaw,pitch:axes.pitch,roll:axes.roll}));
+  document.getElementById('vt').textContent='T:'+(axes.throttle*100|0);
+  document.getElementById('vy').textContent='Y:'+(axes.yaw*100|0);
+  document.getElementById('vp').textContent='P:'+(axes.pitch*100|0);
+  document.getElementById('vr').textContent='R:'+(axes.roll*100|0);
+}
+
+// Joystick
+function jsetup(eid,kid,axX,axY,inv) {
+  const el=document.getElementById(eid), kb=document.getElementById(kid);
+  const R=el.offsetWidth/2-16; let act=false;
+  function mv(x,y) {
+    const cx=el.offsetWidth/2, cy=el.offsetHeight/2;
+    let dx=x-cx, dy=y-cy, d=Math.sqrt(dx*dx+dy*dy);
+    if(d>R){dx=dx/d*R;dy=dy/d*R;}
+    kb.style.left=(cx+dx-16)+'px'; kb.style.top=(cy+dy-16)+'px';
+    const nx=dx/R, ny=dy/R;
+    axes[axX]=Math.round(nx*100)/100; axes[axY]=Math.round((inv?-ny:ny)*100)/100;
+    sendAxes();
+  }
+  function st(e) { act=true; const p=e.type.startsWith('t')?e.touches[0]:e; const r=el.getBoundingClientRect(); mv(p.clientX-r.left,p.clientY-r.top); }
+  function mv2(e) { if(!act)return; e.preventDefault(); const p=e.type.startsWith('t')?e.touches[0]:e; const r=el.getBoundingClientRect(); mv(p.clientX-r.left,p.clientY-r.top); }
+  function en() { if(!act)return; act=false; kb.style.left=(el.offsetWidth/2-16)+'px'; kb.style.top=(el.offsetHeight/2-16)+'px'; axes[axX]=0; axes[axY]=0; sendAxes(); }
+  el.addEventListener('mousedown',st); document.addEventListener('mousemove',mv2); document.addEventListener('mouseup',en);
+  el.addEventListener('touchstart',st,{passive:true}); document.addEventListener('touchmove',mv2,{passive:false}); document.addEventListener('touchend',en);
+}
+jsetup('jleft','kl','yaw','throttle',true);
+jsetup('jright','kr','roll','pitch',true);
+
+// Keyboard
+const KBM={'w':['pitch',1],'s':['pitch',-1],'a':['roll',-1],'d':['roll',1],'ArrowUp':['throttle',1],'ArrowDown':['throttle',-1],'ArrowLeft':['yaw',-1],'ArrowRight':['yaw',1]};
+let kbA={};
+document.addEventListener('keydown',e=>{
+  if(e.repeat)return;
+  if(e.key===' '){e.preventDefault();sendCmd('takeoff');return;}
+  if(e.key==='Backspace'){sendCmd('estop');return;}
+  if(e.key in KBM){e.preventDefault();kbA[e.key]=true;axes[KBM[e.key][0]]=KBM[e.key][1];sendAxes();}
+});
+document.addEventListener('keyup',e=>{
+  if(e.key in KBM&&kbA[e.key]){e.preventDefault();delete kbA[e.key];axes[KBM[e.key][0]]=0;sendAxes();}
+});
+
+// Telemetry polling - shows EVERYTHING
+const TELEM_EL = document.getElementById('telem');
+function renderTelem(key, val, extra) {
+  if (typeof val === 'boolean') val = val ? 'ON' : 'OFF';
+  else if (typeof val === 'number') val = val.toFixed(2);
+  const cls = extra === 'sig' ? ('value ' + (parseInt(val) > -60 ? 'green' : parseInt(val) > -70 ? '' : 'red')) : 'value';
+  return '<div class="telem-item"><span class="label">'+key+'</span><span class="'+cls+'">'+val+'</span></div>';
+}
+async function pollTelemetry() {
+  try {
+    const r=await fetch('/status');
+    const d=await r.json();
+    document.getElementById('bc-sig').textContent=d.wifi.signal||'--';
+    const sv=parseInt(d.wifi.signal);
+    document.getElementById('bc-sig').className='badge '+(sv>-60?'on':sv>-70?'info':'warn');
+
+    let html = '';
+    // WiFi
+    html += renderTelem('SSID', d.wifi.ssid||'--');
+    html += renderTelem('Signal', d.wifi.signal||'--', 'sig');
+    html += renderTelem('Quality', d.wifi.quality||'--');
+    // RX
+    if(d.rx) {
+      html += renderTelem('Variant', d.rx.variant||'--');
+      html += renderTelem('ResID', d.rx.resolution_id??'--');
+      html += renderTelem('RX Packet', d.rx.last_packet||'--');
+    }
+    // Drone type
+    html += renderTelem('Drone', d.drone_type||'--');
+    // All model telemetry
+    if(d.telemetry) {
+      for(const [k,v] of Object.entries(d.telemetry)) {
+        html += renderTelem(k.replace(/_/g,' '), v);
+      }
+    }
+    TELEM_EL.innerHTML = html;
+  } catch(_) {}
+}
+setInterval(pollTelemetry,400);
+
+// Frame counter
+let fc=0;
+setInterval(()=>{document.getElementById('fps').textContent=fc;fc=0;},1000);
+document.getElementById('video').addEventListener('load',()=>fc++);
+
+// 3D drone animation
+const droneEl = document.getElementById('drone3d');
+let dPitch=0, dRoll=0, dYaw=0;
+function update3DDrone() {
+  const p = dPitch * 0.5;
+  const r = dRoll * 0.5;
+  const y = dYaw * 0.3;
+  droneEl.style.transform = `rotateX(${p}deg) rotateZ(${r}deg) rotateY(${y}deg)`;
+}
+// Override telemetry polling to capture pitch/roll/yaw
+const origPoll = pollTelemetry;
+pollTelemetry = async function() {
+  try {
+    const r=await fetch('/status');
+    const d=await r.json();
+    document.getElementById('bc-sig').textContent=d.wifi.signal||'--';
+    const sv=parseInt(d.wifi.signal);
+    document.getElementById('bc-sig').className='badge '+(sv>-60?'on':sv>-70?'info':'warn');
+    let html = '';
+    html += renderTelem('SSID', d.wifi.ssid||'--');
+    html += renderTelem('Signal', d.wifi.signal||'--', 'sig');
+    html += renderTelem('Quality', d.wifi.quality||'--');
+    if(d.rx) {
+      html += renderTelem('Variant', d.rx.variant||'--');
+      html += renderTelem('ResID', d.rx.resolution_id??'--');
+      html += renderTelem('RX Packet', d.rx.last_packet||'--');
+    }
+    html += renderTelem('Drone', d.drone_type||'--');
+    if(d.telemetry) {
+      for(const [k,v] of Object.entries(d.telemetry)) {
+        html += renderTelem(k.replace(/_/g,' '), v);
+      }
+      // Extract angles for 3D drone
+      if(d.telemetry.pitch !== undefined) dPitch = (128 - d.telemetry.pitch) / 1.28;
+      if(d.telemetry.roll !== undefined) dRoll = (128 - d.telemetry.roll) / 1.28;
+      if(d.telemetry.yaw !== undefined) dYaw = (128 - d.telemetry.yaw) / 1.28;
+      update3DDrone();
+    }
+    TELEM_EL.innerHTML = html;
+  } catch(_) {}
+};
+setInterval(pollTelemetry,400);
+
+connectWS();
+log('Dashboard ready');
+</script>
+</body>
+</html>
