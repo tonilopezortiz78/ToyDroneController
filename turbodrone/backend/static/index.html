@@ -314,7 +314,7 @@ function update3DDrone() {
   const r = dRoll * 0.5;
   const y = dYaw * 0.3;
   droneEl.style.transform = `rotateX(${p}deg) rotateZ(${r}deg) rotateY(${y}deg)`;
-  droneSide.style.transform = `rotateX(${90+p*0.3}deg) rotateZ(${r*0.3}deg)`;
+  droneSide.style.transform = `rotateY(180deg) rotateZ(${r}deg) rotateX(${-p}deg)`;
   d3dAngles.textContent = `P:${dPitch.toFixed(1)}° R:${dRoll.toFixed(1)}° Y:${dYaw.toFixed(1)}°`;
 }
 // Override telemetry polling to capture pitch/roll/yaw
