@@ -95,10 +95,7 @@ class CooingdvVideoProtocolAdapter(BaseVideoProtocolAdapter):
     def _open_stream(self) -> bool:
         """
         Open the RTSP stream. Returns True on success.
-        
-        Uses specific OpenCV settings optimized for RTSP:
-        - CAP_FFMPEG backend for better RTSP support
-        - Low buffer size to reduce latency
+        Uses ffprobe to check stream health first, preventing OpenCV hangs.
         """
         with self._cap_lock:
             if self._cap is not None:
@@ -106,10 +103,20 @@ class CooingdvVideoProtocolAdapter(BaseVideoProtocolAdapter):
             
             self._dbg(f"[cooingdv-video] Opening RTSP stream: {self.rtsp_url}")
             
-            # Create capture with FFMPEG backend for better RTSP handling
-            self._cap = cv2.VideoCapture(self.rtsp_url, cv2.CAP_FFMPEG)
+            # Probe stream with ffprobe (non-blocking, timed)
+            import subprocess
+            r = subprocess.run(
+                ["timeout", "3", "ffprobe", "-v", "quiet", "-print_format", "json",
+                 "-show_streams", self.rtsp_url],
+                capture_output=True, timeout=4
+            )
+            if r.returncode != 0 or b'"codec_type": "video"' not in r.stdout:
+                self._dbg("[cooingdv-video] ffprobe check failed, skipping stream")
+                self._cap = None
+                return False
             
-            # Configure for low latency
+            # Create capture with FFMPEG backend (now safe to call)
+            self._cap = cv2.VideoCapture(self.rtsp_url, cv2.CAP_FFMPEG)
             self._cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
             
             if self._cap.isOpened():
