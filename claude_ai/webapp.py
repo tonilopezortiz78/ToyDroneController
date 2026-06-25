@@ -26,7 +26,7 @@ no battery % or attitude is shown (those would be fake).
 Controls:
   ↑/↓ = move fwd/back (pitch) · ←/→ = move left/right (roll)
   W/S = throttle up/down · A/D = yaw left/right · 1/2/3 = speed (slow/normal/fast, beeps)
-  Space = EMERGENCY STOP · T = takeoff · L = land · R = record · C calibrate · H headless · F flip
+  Space = EMERGENCY STOP · T = takeoff · L = land · R = record · 0 = LED light · C calibrate · H headless · F flip
   In-app "?" menu explains video / controls / data / network. Audio beeps on speed + calibrate.
 
 Run:  python3 ufo.py connect   then   python3 webapp.py   -> http://localhost:8088
@@ -37,6 +37,7 @@ auto-centers the sticks on key release. Deps: Python stdlib + ffmpeg.
 import argparse, http.server, json, os, queue, re, socket, socketserver
 import subprocess, sys, threading, time
 from datetime import datetime
+from collections import deque
 from urllib.parse import urlparse
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -266,6 +267,7 @@ class FlightController:
         self.last_client = time.time()     # last time a cockpit/control was seen (deadman)
         self.tel_raw = ""; self.tel_id = None; self.tel_variant = "?"; self.tel_len = 0
         self.tel_nonstandard = False; self.tel_anomaly = ""; self.tel_last = 0.0
+        self.rx_log = deque(maxlen=10)     # recent distinct RX packets (live packet log)
         self.photo_count = self.video_count = None
         self.link_up_since = 0.0; self.tx_rate = 0; self._tx = 0; self._tx_t = time.time()
         self.tx_last = ""          # hex of the exact control packet last sent to the drone
@@ -319,7 +321,10 @@ class FlightController:
             elif name == "takeoff":
                 self.armed = True; self.oneshot[F_TAKEOFF] = now + 0.6
                 self.throttle = TAKEOFF_THR; self.last_input = now   # climb pulse (deepseek), then auto-center to hover
-            elif name == "land": self.oneshot[F_LAND] = now + 0.8
+            elif name == "land":
+                self.oneshot[F_LAND] = now + 0.8
+                self.roll = self.pitch = self.yaw = CENTER; self.throttle = 0   # cut throttle so it descends
+                self.last_input = now; self.armed = False                        # (like deepseek's land)
             elif name == "flip": self.oneshot[F_FLIP] = now + 0.4
             elif name == "calib": self.oneshot[F_CALIB] = now + 1.2   # hold gyro-calib ~24 packets
             elif name == "headless": self.headless = not self.headless
@@ -385,6 +390,11 @@ class FlightController:
                 self.tel_last = time.time()
                 if self.link_up_since == 0.0: self.link_up_since = self.tel_last
                 if h != KNOWN_TEL: self.tel_nonstandard = True; self.tel_anomaly = h
+                ts = datetime.now().strftime("%H:%M:%S")
+                if self.rx_log and self.rx_log[-1]["hex"] == h:
+                    self.rx_log[-1]["n"] += 1; self.rx_log[-1]["t"] = ts
+                else:
+                    self.rx_log.append({"t": ts, "hex": h, "n": 1})
                 if len(data) > 3 and data[2] == 0x4D: self.photo_count = data[3]
                 elif len(data) > 4 and data[2] == 0x58: self.video_count = data[4]
     def snapshot(self):
@@ -406,6 +416,7 @@ class FlightController:
                          "drops": BROKER.drops, "uptime_s": uptime},
                 "rec": BROKER.recording, "tx_rate": self.tx_rate, "bound_100": self.bound,
                 "tx_packet": self.tx_last,
+                "rx_log": list(self.rx_log),
                 "active_cam": BROKER.active_cam,
                 "drone": DRONE.status() if DRONE else {},
             }
@@ -596,6 +607,9 @@ PAGE = r"""<!doctype html><html lang=en><head><meta charset=utf-8>
  .guide .kr{display:flex;align-items:center;gap:10px;font-size:12.5px;color:var(--muted)}
  .guide .ks{display:flex;gap:4px;flex:0 0 64px}
  .guide .kr .tech{color:var(--muted2);font-size:11px}
+ .log{font-family:ui-monospace,monospace;font-size:11px;line-height:1.75;max-height:140px;overflow-y:auto}
+ .log div{white-space:nowrap}
+ .log .lt{color:var(--muted2)}.log .lx{color:var(--amber)}.log .ln{color:#86efac}
  .seled{display:flex;gap:7px;margin-top:9px}
  .seled .btn{flex:1}
  .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%) translateY(8px);
@@ -723,6 +737,7 @@ PAGE = r"""<!doctype html><html lang=en><head><meta charset=utf-8>
           <div class=kr><span class=ks><span class=kbd>L</span></span><span>land</span></div>
           <div class=kr><span class=ks><span class=kbd>C</span></span><span>calibrate gyro <span class=tech>(do first)</span></span></div>
           <div class=kr><span class=ks><span class=kbd>R</span></span><span>record video</span></div>
+          <div class=kr><span class=ks><span class=kbd>0</span></span><span>LED light on/off</span></div>
           <div class=kr><span class=ks><span class=kbd>H</span></span><span>headless · <span class=kbd>F</span> flip</span></div>
           <div class=kr><span class=ks><span class=kbd>Space</span></span><span style="color:#fca5a5;font-weight:600">EMERGENCY STOP</span></div>
         </div>
@@ -760,6 +775,14 @@ PAGE = r"""<!doctype html><html lang=en><head><meta charset=utf-8>
         <div class=row><span class=k>Length</span><span id=tlen class="v mono">—</span></div>
         <div class=row><span class=k>Status</span><span id=tstat class=v>—</span></div>
         <div id=anom class=est style="margin-top:8px"></div>
+      </div>
+    </div>
+    <div class=card>
+      <div class=card-h><h2>Packet Log · RX</h2><span class=hint>live from drone</span></div>
+      <div class=card-b>
+        <div id=rxlog class=log><div class=dim>— waiting for packets —</div></div>
+        <p class=note>Distinct packets the drone sends back (repeats collapsed with a ×count). This drone
+          only emits status/ack — anything else is flagged above.</p>
       </div>
     </div>
     <div class=card>
@@ -879,7 +902,7 @@ const held=new Set();
 // Space = E-STOP · T = takeoff · L = land · R = record · C calibrate · H headless · F flip.
 const AXIS={ArrowUp:['p',+1],ArrowDown:['p',-1],ArrowLeft:['r',-1],ArrowRight:['r',+1],
  KeyW:['t',+1],KeyS:['t',-1],KeyA:['y',-1],KeyD:['y',+1]};   // ↑ = forward (pitch flipped to match the airframe)
-const ONE={KeyH:'headless',KeyC:'calib',KeyF:'flip'};
+const ONE={KeyH:'headless',KeyC:'calib',KeyF:'flip',Digit0:'light',Numpad0:'light'};   // 0 = LED light
 let activeCam='front',rot=90,zoomed=false,recording=false;  // 90° default (camera mounted sideways)
 const NOIMG=location.search.includes('noimg');  // skip live stream (debug/screenshot)
 const $=i=>document.getElementById(i);
@@ -888,9 +911,11 @@ function clamp(v){return v<LO?LO:v>HI?HI:v}
 const trim={p:0,r:0,t:0,y:0};const TRIM_STEP=3,TRIM_MAX=80;
 const TRIMK={ArrowUp:['p',+1],ArrowDown:['p',-1],ArrowLeft:['r',-1],ArrowRight:['r',+1]};  // matches movement dirs
 function hasTrim(){return trim.p||trim.r||trim.t||trim.y;}
+const YAW_MIN=80;   // yaw needs more authority than pitch/roll (big deadzone on this airframe)
 function axes(){let t=CENTER+trim.t,y=CENTER+trim.y,p=CENTER+trim.p,r=CENTER+trim.r;
  for(const c of held){const a=AXIS[c];if(!a)continue;
-  if(a[0]==='t')t+=a[1]*STEP;if(a[0]==='y')y+=a[1]*STEP;if(a[0]==='p')p+=a[1]*STEP;if(a[0]==='r')r+=a[1]*STEP;}
+  const st=a[0]==='y'?Math.max(STEP,YAW_MIN):STEP;   // floor yaw so A/D work even on speed 1
+  if(a[0]==='t')t+=a[1]*st;else if(a[0]==='y')y+=a[1]*st;else if(a[0]==='p')p+=a[1]*st;else if(a[0]==='r')r+=a[1]*st;}
  return{throttle:clamp(t),yaw:clamp(y),pitch:clamp(p),roll:clamp(r)};}
 function adjustTrim(ax,dir){trim[ax]=Math.max(-TRIM_MAX,Math.min(TRIM_MAX,trim[ax]+dir*TRIM_STEP));showTrim();push();}
 function resetTrim(){trim.p=trim.r=trim.t=trim.y=0;showTrim();push();toast('Trim reset');}
@@ -1001,6 +1026,11 @@ function render(s){
  if(t.nonstandard){$('tstat').textContent='⚠ Non-standard';$('tstat').style.color='var(--amber)';
    $('anom').textContent='Unexpected packet: '+t.anomaly+' — possible hidden data.';}
  else{$('tstat').textContent=t.online?'Nominal':'—';$('tstat').style.color=t.online?'var(--green)':'var(--muted)';$('anom').textContent='';}
+ // RX packet log (most recent first; repeats collapsed)
+ const lg=s.rx_log||[];
+ $('rxlog').innerHTML = lg.length ? lg.slice().reverse().map(e=>
+   `<div><span class=lt>${e.t}</span> ${e.hex}${e.n>1?' <span class=lx>×'+e.n+'</span>':''}</div>`).join('')
+   : '<div class=dim>— waiting for packets —</div>';
  // TX — exact bytes we send to the drone
  const tx=s.tx_packet||'';$('txpkt').textContent=tx||'—';
  const b=tx?tx.split(' ').map(x=>parseInt(x,16)):[];
