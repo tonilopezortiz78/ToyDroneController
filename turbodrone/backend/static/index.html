@@ -136,6 +136,12 @@
     <div class="btn-group">
       <button class="btn-rec" id="btn-rec" onclick="toggleRec()" style="grid-column:span 2;">⏺ Record</button>
     </div>
+    <div class="btn-group">
+      <button class="btn-hl" onclick="setSpeed(1)" style="font-size:10px;">Slow</button>
+      <button class="btn-hl" onclick="setSpeed(2)" style="font-size:10px;background:#2a7;">Normal</button>
+      <button class="btn-hl" onclick="setSpeed(3)" style="font-size:10px;background:#e62;">Fast</button>
+      <button class="btn-hl" id="btn-speed" style="font-size:10px;background:#444;">Speed: 2</button>
+    </div>
 
     <div class="jarea">
       <div class="jbox">
@@ -323,6 +329,16 @@ pollTelemetry = async function() {
   } catch(_) {}
 };
 setInterval(pollTelemetry,400);
+
+// Speed control (3 levels)
+let currentSpeed = 2;
+function setSpeed(level) {
+  currentSpeed = level;
+  document.getElementById('btn-speed').textContent = 'Speed: ' + level;
+  if (!wsOK) return;
+  ws.send(JSON.stringify({type:'set_speed_index', speed_index: level}));
+  log('Speed: ' + ['','Slow','Normal','Fast'][level]);
+}
 
 // Toggle recording
 let recording = false;
