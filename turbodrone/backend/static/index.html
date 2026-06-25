@@ -6,46 +6,63 @@
 <title>RC UFO Drone Dashboard</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Segoe UI', sans-serif; background: #0a0a0f; color: #e0e0e0; height: 100vh; overflow: hidden; font-size: 16px; }
+  body { font-family: 'Segoe UI', sans-serif; background: #0a0a0f; color: #e0e0e0; height: 100vh; overflow: hidden; font-size: 11px; }
   .container { display: flex; height: 100vh; }
   .video-panel { flex: 4; display: flex; align-items: center; justify-content: center; background: #000; position: relative; overflow: hidden; }
   #video { width: 720px; height: 960px; object-fit: contain; image-rendering: auto; }
-  .sidebar { width: 480px; background: #14141f; padding: 16px; display: flex; flex-direction: column; gap: 10px; overflow-y: auto; }
-  h2 { color: #fff; font-size: 18px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 2px solid #2a2a3a; padding-bottom: 6px; margin-top: 4px; }
-  .row { display: flex; gap: 8px; flex-wrap: wrap; }
-  .badge { padding: 6px 14px; border-radius: 6px; font-size: 15px; font-weight: 600; white-space: nowrap; }
+  .sidebar { width: 340px; background: #14141f; padding: 10px; display: flex; flex-direction: column; gap: 6px; overflow-y: auto; }
+  h2 { color: #fff; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #2a2a3a; padding-bottom: 4px; margin-top: 2px; }
+  .row { display: flex; gap: 6px; flex-wrap: wrap; }
+  .badge { padding: 3px 8px; border-radius: 4px; font-size: 10px; font-weight: 600; white-space: nowrap; }
   .badge.on { background: #1a6; color: #fff; }
   .badge.off { background: #444; color: #aaa; }
   .badge.info { background: #19a; color: #fff; }
   .badge.warn { background: #e62; color: #fff; }
-  button { padding: 12px 0; border: none; border-radius: 6px; font-size: 16px; font-weight: 600; cursor: pointer; transition: 0.1s; }
+  button { padding: 6px 0; border: none; border-radius: 4px; font-size: 11px; font-weight: 600; cursor: pointer; transition: 0.1s; }
   button:hover { filter: brightness(1.2); }
-  .btn-to { background: #2a7; color: #fff; font-size: 18px; }
-  .btn-ld { background: #e62; color: #fff; font-size: 18px; }
-  .btn-stop { background: #c22; color: #fff; font-size: 18px; }
-  .btn-hl { background: #55a; color: #fff; font-size: 18px; }
-  .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
-  .jarea { display: flex; gap: 12px; justify-content: center; }
+  .btn-to { background: #2a7; color: #fff; }
+  .btn-ld { background: #e62; color: #fff; }
+  .btn-stop { background: #c22; color: #fff; }
+  .btn-hl { background: #55a; color: #fff; }
+  .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+  .jarea { display: flex; gap: 8px; justify-content: center; }
   .jbox { text-align: center; }
-  .jbox .lbl { font-size: 14px; color: #888; text-transform: uppercase; margin-bottom: 4px; }
-  .joy { width: 140px; height: 140px; background: radial-gradient(circle, #1a1a2e 60%, #0f0f1a); border-radius: 70px; position: relative; cursor: grab; border: 3px solid #2a2a4a; user-select: none; touch-action: none; margin: 4px auto; }
+  .jbox .lbl { font-size: 9px; color: #888; text-transform: uppercase; margin-bottom: 2px; }
+  .joy { width: 100px; height: 100px; background: radial-gradient(circle, #1a1a2e 60%, #0f0f1a); border-radius: 50px; position: relative; cursor: grab; border: 2px solid #2a2a4a; user-select: none; touch-action: none; margin: 2px auto; }
   .joy:active { cursor: grabbing; }
-  .knob { width: 44px; height: 44px; background: radial-gradient(circle, #6af, #38c); border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); box-shadow: 0 0 14px rgba(60,140,255,0.5); pointer-events: none; }
-  .knob.t { background: radial-gradient(circle, #f84, #d52); box-shadow: 0 0 14px rgba(255,100,40,0.5); }
-  .aread { font-size: 15px; font-family: monospace; color: #4af; display: flex; gap: 8px; justify-content: center; font-weight: 600; }
-  .aread span { min-width: 50px; }
-  .telem-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
-  .telem-item { background: #0f0f1a; border-radius: 5px; padding: 6px 10px; display: flex; justify-content: space-between; font-size: 14px; }
+  .knob { width: 30px; height: 30px; background: radial-gradient(circle, #6af, #38c); border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); box-shadow: 0 0 10px rgba(60,140,255,0.4); pointer-events: none; }
+  .knob.t { background: radial-gradient(circle, #f84, #d52); box-shadow: 0 0 10px rgba(255,100,40,0.4); }
+  .aread { font-size: 10px; font-family: monospace; color: #4af; display: flex; gap: 4px; justify-content: center; font-weight: 600; }
+  .aread span { min-width: 36px; }
+  .telem-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 2px; }
+  .telem-item { background: #0f0f1a; border-radius: 3px; padding: 3px 6px; display: flex; justify-content: space-between; font-size: 10px; }
   .telem-item .label { color: #888; }
   .telem-item .value { color: #4af; font-family: monospace; font-weight: 600; }
   .telem-item .value.green { color: #4a4; }
   .telem-item .value.red { color: #c44; }
-  .procedure { background: #0a0a18; border-radius: 6px; padding: 10px 12px; font-size: 14px; line-height: 1.7; color: #ccc; border-left: 3px solid #4af; }
+  .procedure { background: #0a0a18; border-radius: 4px; padding: 6px 8px; font-size: 10px; line-height: 1.5; color: #ccc; border-left: 2px solid #4af; }
   .procedure b { color: #fff; }
-  .procedure .key { display:inline-block; background:#2a2a4a; color:#4af; padding:1px 8px; border-radius:4px; font-family:monospace; font-size:13px; font-weight:700; }
+  .procedure .key { display:inline-block; background:#2a2a4a; color:#4af; padding:1px 5px; border-radius:3px; font-family:monospace; font-size:10px; font-weight:700; }
   .procedure .danger { color: #f44; font-weight: 700; }
-  .log { background: #0a0a12; border-radius: 5px; padding: 6px 10px; font-family: monospace; font-size: 13px; height: 70px; overflow-y: auto; color: #6a6; }
-  .fps { position: absolute; bottom: 14px; left: 14px; font-size: 15px; color: #888; background: rgba(0,0,0,0.7); padding: 4px 12px; border-radius: 6px; }
+  .log { background: #0a0a12; border-radius: 3px; padding: 4px 6px; font-family: monospace; font-size: 10px; height: 50px; overflow-y: auto; color: #6a6; }
+  .fps { position: absolute; bottom: 10px; left: 10px; font-size: 11px; color: #888; background: rgba(0,0,0,0.7); padding: 2px 8px; border-radius: 4px; }
+  .drone3d-wrap { position: absolute; top: 10px; right: 10px; width: 100px; height: 100px; perspective: 400px; background: rgba(0,0,0,0.6); border-radius: 8px; border: 1px solid rgba(60,140,255,0.2); backdrop-filter: blur(3px); }
+  .drone3d-scene { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; transform-style: preserve-3d; }
+  .drone3d { width: 50px; height: 50px; position: relative; transform-style: preserve-3d; transition: transform 0.1s ease-out; }
+  .drone3d-arm { position: absolute; width: 8px; height: 40px; background: linear-gradient(180deg,#4af,#0a2a5a); border-radius: 3px; box-shadow: 0 0 5px rgba(60,140,255,0.3); }
+  .drone3d-arm.tl { top: -20px; left: 2px; transform-origin: bottom center; transform: rotate(-30deg); }
+  .drone3d-arm.tr { top: -20px; right: 2px; transform-origin: bottom center; transform: rotate(30deg); }
+  .drone3d-arm.bl { bottom: -20px; left: 2px; transform-origin: top center; transform: rotate(30deg); }
+  .drone3d-arm.br { bottom: -20px; right: 2px; transform-origin: top center; transform: rotate(-30deg); }
+  .drone3d-body { width: 22px; height: 22px; background: radial-gradient(circle at 35% 35%, #4af, #0a2a5a); border-radius: 50%; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); box-shadow: 0 0 12px rgba(60,140,255,0.4), inset 0 0 6px rgba(0,0,0,0.5); border: 1px solid #4af; }
+  .drone3d-prop { position: absolute; width: 14px; height: 4px; background: rgba(60,140,255,0.3); border-radius: 2px; }
+  .drone3d-prop.tl { top: -23px; left: -3px; }
+  .drone3d-prop.tr { top: -23px; right: -3px; }
+  .drone3d-prop.bl { bottom: -23px; left: -3px; }
+  .drone3d-prop.br { bottom: -23px; right: -3px; }
+  .drone3d-ring { position: absolute; width: 56px; height: 56px; border: 1px solid rgba(60,140,255,0.12); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%,-50%); }
+  .drone3d-ring2 { position: absolute; width: 68px; height: 68px; border: 1px dashed rgba(60,140,255,0.06); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%,-50%); }
+  .drone3d-glow { position: absolute; width: 50px; height: 50px; background: radial-gradient(circle, rgba(60,140,255,0.08) 0%, transparent 70%); border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%,-50%); }
   /* ── 3D Drone ───────────────────────────────────── */
   .drone3d-wrap { position: absolute; top: 14px; right: 14px; width: 160px; height: 160px; perspective: 600px; background: rgba(0,0,0,0.65); border-radius: 12px; border: 1px solid #4af33; backdrop-filter: blur(4px); }
   .drone3d-scene { width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; transform-style: preserve-3d; }
