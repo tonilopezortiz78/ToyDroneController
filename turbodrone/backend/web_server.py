@@ -557,9 +557,22 @@ async def toggle_record():
     with _recording_lock:
         if _recording_proc is not None:
             _recording_proc.terminate()
+            try:
+                _recording_proc.wait(timeout=3)
+            except:
+                _recording_proc.kill()
             _recording_proc = None
             return {"status": "stopped"}
         else:
+            # Quick RTSP check before recording
+            r = subprocess.run(
+                ["timeout", "2", "ffprobe", "-v", "quiet", "-print_format", "json",
+                 "-show_streams", "rtsp://192.168.1.1:7070/webcam"],
+                capture_output=True, timeout=3
+            )
+            if r.returncode != 0 or b'"codec_type": "video"' not in r.stdout:
+                return {"status": "error", "error": "No video stream available"}
+            
             ts = time.strftime("%Y%m%d_%H%M%S")
             path = os.path.expanduser(f"~/Videos/drone_rec_{ts}.mkv")
             os.makedirs(os.path.dirname(path), exist_ok=True)

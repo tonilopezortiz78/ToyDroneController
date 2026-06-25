@@ -266,6 +266,10 @@ async function toggleRec() {
   try {
     const r = await fetch('/record', {method:'POST'});
     const d = await r.json();
+    if (d.status === 'error') {
+      log('Record failed: ' + (d.error||'unknown'));
+      return;
+    }
     if (d.status === 'recording') {
       recording = true;
       btn.textContent = '⏹ Stop Recording';
